@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the PWA and serve it to every Android phone plugged in over USB.
 # On each phone, Chrome opens http://localhost:4173/<role> (localhost counts as secure, so Web NFC works).
-# The API must be running separately: pnpm dev:api
+# Starts the API (pnpm dev:api) in a kitty window if it is not already running.
 set -euo pipefail
 cd "$(dirname "$0")"
 
