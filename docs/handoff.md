@@ -26,7 +26,7 @@ If two files disagree, the board wins for anything visual and the PRD + `PRODUCT
 3. Build the shared components once, matching the board's helpers: `TopBar`, `NavBar` (rail from 600 px), `Fab`, `Button` (filled, tonal, outlined, text), `Chip`, `StatusChip`, `NetChip`, `TextField`, `ListItem`, `Dialog`, `Snackbar`, `Card`, `TapTarget`, and the signature `ReceiptSlip` with its `Stamp`.
 4. Port each screen from `board-A/<screen>.html` 1:1. Deviations are proposals, not choices.
 5. **Parity gate before polish:** Playwright screenshots of `board-A/<screen>.html` and the build at 1920, 1280, 768 and 390. Section order, columns, element sizes and positions must match within 8 px; record differences in `evidence.md`. Use `e2e/viewports.html` to see the running build at 390 to 3440 px from a laptop.
-6. The Impeccable design hook (`.claude/settings.local.json`) checks UI files after every edit in Claude Code. Act on its findings.
+6. Impeccable ships in `.claude/skills/impeccable`. Its design hook is not committed (it lives in each person's own `.claude/settings.local.json`); to get the automatic checks, run `npx impeccable install --providers=claude --scope=project` once, or run `.claude/skills/impeccable/scripts/impeccable detect docs/ apps/web/src` before handing work back.
 
 ## Work split (from the PRD) with paste-ready prompts
 
