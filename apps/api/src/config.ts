@@ -40,5 +40,7 @@ export const config = {
   requireReceiptSig: process.env.REQUIRE_RECEIPT_SIG !== "false",
   // /sync ships PIN verifiers, so only registered POS devices may fetch it. "false" = open (dev only).
   requireDeviceSync: process.env.REQUIRE_DEVICE_SYNC !== "false",
+  // Student self-registration: only emails on this domain (format check only, no verification).
+  studentEmailDomain: (process.env.STUDENT_EMAIL_DOMAIN ?? "umak.edu.ph").toLowerCase(),
   defaultOfflineCap: Number(process.env.DEFAULT_OFFLINE_CAP ?? 10000), // centavos (₱100)
 };

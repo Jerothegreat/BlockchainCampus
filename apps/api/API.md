@@ -3,6 +3,14 @@
 Base URL `http://localhost:3000` (phone: `adb reverse tcp:3000 tcp:3000`). Amounts are integer **centavos**.
 Cashier routes need the header `x-cashier-key: <CASHIER_KEY>`. Contract: **TagakPesoV2** (tPHP, one wallet per card, non-transferable).
 
+## Who can do what
+| | Register | Add funds | Pay | Receive | Withdraw |
+|---|---|---|---|---|---|
+| **Student card** | self, with an `@umak.edu.ph` email | `/cards/topup` (online, simulated) | tap at POS | no | no |
+| **Stall** | anyone | no | no | yes | `/merchants/withdraw` |
+
+All funds are simulated: top-ups mint test tPHP, and withdrawals burn it. Every move is a real on-chain transaction.
+
 ## The card wallet model
 Each NFC card is bound on-chain to exactly one wallet (`linkCard(cardId, wallet)`, immutable, `cardId = 0x + uidHash`).
 The card stores a **signed wallet record** (balance, nonce, optional pending payment). The record can only change when:
@@ -24,15 +32,18 @@ Every endpoint that changes a card returns a new `card` hex. **The phone must wr
 | Route | Who | Notes |
 |---|---|---|
 | `GET /health` | any | `{chainId, contract, relayer, deployer, cardSigner}` |
-| `POST /link` `{uid, studentNo, name?, pin}` | cashier | On-chain `linkCard`. 201 `{uidHash, studentNo, address, linkTx, card}`: **write `card`**. 409 `ALREADY_LINKED` |
+| `POST /cards/register` `{email, uid, studentNo, name?, pin}` | **student app** | Self-registration. `email` must end in `@umak.edu.ph` (domain check only, no verification); one card per email. On-chain `linkCard`. 201 `{uidHash, studentNo, address, linkTx, card}`: **write `card`**. 403 `UMAK_EMAIL_REQUIRED`, 409 `ALREADY_LINKED` / `EMAIL_ALREADY_REGISTERED`, 429 `RATE_LIMITED` (10 per 10 min per IP) |
+| `POST /link` `{uid, studentNo, name?, pin}` | cashier | Same as register, without email (fallback at the desk) |
 | `POST /cards/topup` `{uid, card, amount}` | student phone | Online top-up (mock payment). Returns `{card, balance, nonce, txHash, explorer, ref}`. |
 | `POST /cards/topup/cash` `{uid, card, amount, orNumber}` | cashier | Same rules, for cash |
 | `POST /cards/refresh` `{uid, card}` | student phone / online POS | Settles the card's pending payment and any queued ones. Returns `{card, balance, nonce, settled:[…]}` |
 | `GET /students/by-uid/:uidHash` | any | `{uidHash, studentNo, name, address, balance, offlineCap}` |
 | `GET /students/:address/receipts?limit=50` | student phone | `{address, studentNo, name, balance, pendingTotal, receipts:[{id, to, merchant, amount, status, reason, txHash, explorer, createdAt}]}` |
 | `GET /merchants` | any | `[{id, name, address, deviceAddress}]` |
-| `POST /merchants` `{name, deviceAddress?}` | cashier | On-chain `addMerchant` |
-| `POST /merchants/:id/device` `{deviceAddress}` | cashier | Register or rotate the stall's POS key |
+| `POST /merchants` `{name, deviceAddress}` | **anyone (POS phone)** | Stall self-registration, no domain gate. On-chain `addMerchant`. 429 after 5 per hour per IP |
+| `GET /merchants/me` | stall device | Device-auth headers. `{id, name, address, deviceAddress, balance, sales:[…], withdrawals:[…]}` |
+| `POST /merchants/withdraw` `{id: uuid, amount}` | stall device | Cash-out: burns the stall's tPHP (`redeem`); the payout is simulated. `id` is an idempotency key. `{id, amount, ref, status:'paid', txHash, explorer}`. 400 `INSUFFICIENT` |
+| `POST /merchants/:id/device` `{deviceAddress}` | cashier | Move a stall to a new POS phone (lost or replaced) |
 | `GET /sync` | POS device | Device-auth headers. `{syncedAt, cardSigner, students:[{uidHash, studentNo, name, address, pinHash, pinSalt, pinIter, balance, offlineCap, cardNonce, blocked}], merchants}` |
 | `POST /settle` `{receipts:[{id, cardId, to, amount, createdAt, cardNonce, sig}]}` | POS queue | ≤ 50 per batch; idempotent |
 | `GET /receipts/:id` | any | `{id, status, reason, txHash, explorer}` |
@@ -73,8 +84,8 @@ Domain: `{name:'UMak Pay', version:'1', chainId, verifyingContract: contract}` (
 
 The backend rejects receipts from a rolled-back card copy (`STALE_CARD_STATE` / `DOUBLE_SPEND`) and blocks that card.
 
-## Device key and `/sync` auth
-The POS generates a key once (`generatePrivateKey()`), keeps it in IndexedDB, and shows its address. The cashier registers it with `POST /merchants/:id/device`.
+## Device key and auth (`/sync`, `/merchants/me`, `/merchants/withdraw`)
+The POS generates a key once (`generatePrivateKey()`), keeps it in IndexedDB, and registers the stall with `POST /merchants {name, deviceAddress}`.
 ```
 x-device-address: account.address | x-device-timestamp: Date.now() (±2 min)
 x-device-signature: account.signMessage({ message: `UMak Pay device auth ${ts}` })

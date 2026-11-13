@@ -24,6 +24,7 @@ export const abi = parseAbi([
   "function linkCard(bytes32 cardId, address wallet)",
   "function addMerchant(address merchant)",
   "function topUp(bytes32 cardId, uint256 amount, string ref)",
+  "function redeem(address from, uint256 amount, string ref)",
   "function settleBatch((bytes32 id, bytes32 cardId, address to, uint256 amount)[] ps)",
   "event PaymentSettled(bytes32 indexed id, bytes32 indexed cardId, address to, uint256 amount)",
   "event PaymentFailed(bytes32 indexed id, string reason)",
@@ -62,7 +63,7 @@ export async function balanceOf(address: Address): Promise<bigint> {
 export const signers = { relayer: relayer.account.address, deployer: deployer.account.address };
 
 /** Owner-only contract writes (Deployer key), one at a time, waiting for confirmation. */
-function ownerWrite(functionName: "linkCard" | "addMerchant" | "topUp", args: readonly unknown[]): Promise<Hex> {
+function ownerWrite(functionName: "linkCard" | "addMerchant" | "topUp" | "redeem", args: readonly unknown[]): Promise<Hex> {
   return deployerQueue(async () => {
     // viem can't narrow args from a runtime function name; the ABI above is the source of truth.
     const hash = await deployer.writeContract({ address: config.contract, abi, functionName, args, ...txFees } as never);
@@ -77,6 +78,8 @@ export const linkCard = (cardId: Hex, wallet: Address) => ownerWrite("linkCard",
 export const addMerchant = (merchant: Address) => ownerWrite("addMerchant", [merchant]);
 /** Money received for this card → mint the same amount of tPHP to its wallet. `ref` = OR number or payment ref. */
 export const topUp = (cardId: Hex, amount: bigint, ref: string) => ownerWrite("topUp", [cardId, amount, ref]);
+/** Stall withdrawal: burn its tPHP (payout to the stall happens off-chain; simulated in the demo). */
+export const redeem = (from: Address, amount: bigint, ref: string) => ownerWrite("redeem", [from, amount, ref]);
 
 export type Payment = { id: string; cardId: Hex; to: Address; amount: bigint };
 export type Outcome =

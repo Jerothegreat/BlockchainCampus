@@ -33,11 +33,12 @@ export const uidHashOfCardId = (cardId: string) => cardId.replace(/^0x/, "").toL
 const newAddress = () => privateKeyToAddress(generatePrivateKey()); // key discarded on purpose
 
 const insertStudent = db.prepare(
-  `INSERT INTO students (uid_hash, student_no, name, address, pin_hash, pin_salt, pin_iter, offline_cap, created_at)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  `INSERT INTO students (uid_hash, student_no, name, address, pin_hash, pin_salt, pin_iter, offline_cap, email, created_at)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 );
 const studentByUid = db.prepare("SELECT * FROM students WHERE uid_hash = ?");
 const studentByNo = db.prepare("SELECT 1 FROM students WHERE student_no = ?");
+const studentByEmail = db.prepare("SELECT 1 FROM students WHERE email = ?");
 const setNonce = db.prepare("UPDATE students SET card_nonce = ? WHERE uid_hash = ?");
 const blockStmt = db.prepare("UPDATE students SET blocked = 1, offline_cap = 0 WHERE uid_hash = ?");
 const studentByAddress = db.prepare("SELECT * FROM students WHERE address = ?");
@@ -55,9 +56,10 @@ export class DuplicateError extends Error {}
 const isUniqueViolation = (err: unknown) => String((err as Error)?.message).includes("UNIQUE");
 
 /** Registers a card: new wallet, immutable on-chain link (card → wallet), PIN verifier, initial card state. */
-export async function createStudent(input: { uid: string; studentNo: string; name?: string; pin: string }) {
+export async function createStudent(input: { uid: string; studentNo: string; name?: string; pin: string; email?: string }) {
   const uidHash = uidHashOf(input.uid);
   if (findStudentByUid(uidHash) || studentByNo.get(input.studentNo)) throw new DuplicateError("ALREADY_LINKED");
+  if (input.email && studentByEmail.get(input.email)) throw new DuplicateError("EMAIL_ALREADY_REGISTERED");
   const address = newAddress();
   const pin = newPinVerifier(input.pin);
   const linkTx = await linkCard(cardIdOf(uidHash), address); // before the DB insert: chain is the source of truth
@@ -71,6 +73,7 @@ export async function createStudent(input: { uid: string; studentNo: string; nam
       pin.salt,
       pin.iterations,
       config.defaultOfflineCap,
+      input.email ?? null,
       Date.now(),
     );
   } catch (err) {

@@ -5,6 +5,7 @@ import { signers } from "./chain.js";
 import { config } from "./config.js";
 import cards from "./routes/cards.js";
 import merchants from "./routes/merchants.js";
+import register from "./routes/register.js";
 import settle from "./routes/settle.js";
 import students from "./routes/students.js";
 
@@ -17,6 +18,7 @@ await app.register(students);
 await app.register(merchants);
 await app.register(settle);
 await app.register(cards);
+await app.register(register);
 
 app.listen({ port: config.port, host: "0.0.0.0" }).catch((err) => {
   app.log.error(err);

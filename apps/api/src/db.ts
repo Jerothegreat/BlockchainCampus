@@ -50,7 +50,18 @@ addColumn("students", "blocked", "INTEGER NOT NULL DEFAULT 0"); // 1 = cloned/ro
 addColumn("receipts", "card_id", "TEXT"); // 0x + uidHash
 addColumn("receipts", "card_nonce", "INTEGER"); // card state nonce the POS saw (null = seed/legacy)
 
+addColumn("students", "email", "TEXT"); // @umak.edu.ph address (self-registered; domain check only)
+
 db.exec(`
+  CREATE TABLE IF NOT EXISTS withdrawals (
+    id           TEXT PRIMARY KEY,  -- client UUID: idempotency key
+    merchant_id  TEXT NOT NULL,
+    amount       INTEGER NOT NULL,
+    ref          TEXT NOT NULL,
+    tx_hash      TEXT,
+    created_at   INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS students_email ON students(email);
   CREATE UNIQUE INDEX IF NOT EXISTS merchants_device ON merchants(device_address);
   CREATE INDEX IF NOT EXISTS receipts_from ON receipts(from_addr, created_at);
   CREATE INDEX IF NOT EXISTS receipts_card ON receipts(card_id, card_nonce);
