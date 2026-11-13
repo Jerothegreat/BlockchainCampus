@@ -28,7 +28,8 @@ export type ReceiptResult = { id: string; status: 'pending' | 'settled' | 'faile
 /** A POS-signed card payment (POST /settle). */
 export type SignedReceipt = { id: string; cardId: Hex; to: Address; amount: number; createdAt: number; cardNonce: number; sig: Hex }
 
-export type Linked = { uidHash: string; studentNo: string; address: Address; linkTx: Hex; card: CardHex }
+/** `linkTx` is null when the card was already linked on-chain and the server recovered that wallet. */
+export type Linked = { uidHash: string; studentNo: string; address: Address; linkTx: Hex | null; card: CardHex }
 export type CardUpdate = { card: CardHex; balance: number; nonce: number }
 export type TopUp = CardUpdate & { txHash: Hex; explorer?: string; ref: string }
 export type Refresh = CardUpdate & { settled: ReceiptResult[] }

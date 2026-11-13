@@ -60,6 +60,11 @@ export async function balanceOf(address: Address): Promise<bigint> {
   return publicClient.readContract({ address: config.contract, abi, functionName: "balanceOf", args: [address] });
 }
 
+/** The wallet a card is bound to on-chain, or the zero address if it was never linked. */
+export async function walletOfCard(cardId: Hex): Promise<Address> {
+  return publicClient.readContract({ address: config.contract, abi, functionName: "walletOf", args: [cardId] });
+}
+
 export const signers = { relayer: relayer.account.address, deployer: deployer.account.address };
 
 /** Owner-only contract writes (Deployer key), one at a time, waiting for confirmation. */

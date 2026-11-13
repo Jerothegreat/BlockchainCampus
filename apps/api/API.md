@@ -32,7 +32,7 @@ Every endpoint that changes a card returns a new `card` hex. **The phone must wr
 | Route | Who | Notes |
 |---|---|---|
 | `GET /health` | any | `{chainId, contract, relayer, deployer, cardSigner}` |
-| `POST /cards/register` `{email, uid, studentNo, name?, pin}` | **student app** | Self-registration. `email` must end in `@umak.edu.ph` (domain check only, no verification); one card per email. On-chain `linkCard`. 201 `{uidHash, studentNo, address, linkTx, card}`: **write `card`**. 403 `UMAK_EMAIL_REQUIRED`, 409 `ALREADY_LINKED` / `EMAIL_ALREADY_REGISTERED`, 429 `RATE_LIMITED` (10 per 10 min per IP) |
+| `POST /cards/register` `{email, uid, studentNo, name?, pin}` | **student app** | Self-registration. `email` must end in `@umak.edu.ph` (domain check only, no verification); one card per email. On-chain `linkCard`. 201 `{uidHash, studentNo, address, linkTx, card}`: **write `card`**. If the card is already linked on-chain but unknown to the API (a failed earlier registration), that wallet is reused and `linkTx` is `null`. 403 `UMAK_EMAIL_REQUIRED`, 409 `ALREADY_LINKED` / `EMAIL_ALREADY_REGISTERED`, 429 `RATE_LIMITED` (10 per 10 min per IP) |
 | `POST /link` `{uid, studentNo, name?, pin}` | cashier | Same as register, without email (fallback at the desk) |
 | `POST /cards/topup` `{uid, card, amount}` | student phone | Online top-up (mock payment). Returns `{card, balance, nonce, txHash, explorer, ref}`. |
 | `POST /cards/topup/cash` `{uid, card, amount, orNumber}` | cashier | Same rules, for cash |

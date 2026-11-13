@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
-import { getAddress, type Address, type Hex } from "viem";
+import { getAddress, zeroAddress, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAddress } from "viem/accounts";
 import { issueCardState } from "../cardstate.js";
-import { addMerchant, linkCard } from "../chain.js";
+import { addMerchant, balanceOf, linkCard, walletOfCard } from "../chain.js";
 import { config } from "../config.js";
 import { db } from "../db.js";
 import { newPinVerifier } from "../pin.js";
@@ -60,9 +60,9 @@ export async function createStudent(input: { uid: string; studentNo: string; nam
   const uidHash = uidHashOf(input.uid);
   if (findStudentByUid(uidHash) || studentByNo.get(input.studentNo)) throw new DuplicateError("ALREADY_LINKED");
   if (input.email && studentByEmail.get(input.email)) throw new DuplicateError("EMAIL_ALREADY_REGISTERED");
-  const address = newAddress();
+  const cardId = cardIdOf(uidHash);
+  const { address, linkTx } = await linkOrRecover(cardId); // before the DB insert: chain is the source of truth
   const pin = newPinVerifier(input.pin);
-  const linkTx = await linkCard(cardIdOf(uidHash), address); // before the DB insert: chain is the source of truth
   try {
     insertStudent.run(
       uidHash,
@@ -80,8 +80,33 @@ export async function createStudent(input: { uid: string; studentNo: string; nam
     if (isUniqueViolation(err)) throw new DuplicateError("ALREADY_LINKED");
     throw err;
   }
-  const card = await issueCardState(cardIdOf(uidHash), 0, 0);
+  // A recovered wallet could hold funds (e.g. a wiped DB): start the card at its real balance.
+  const balance = linkTx ? 0 : Number(await balanceOf(address));
+  const card = await issueCardState(cardId, balance, 0);
   return { uidHash, studentNo: input.studentNo, address, linkTx, card };
+}
+
+/**
+ * Links the card to a fresh wallet, or adopts the wallet it is already linked to on-chain.
+ * The link is immutable, so a card linked earlier whose DB row was never saved (insert failed,
+ * crash, wiped DB) could otherwise never be registered again (CardAlreadyLinked).
+ * Only called when the DB has no student for this card. `linkTx` is null when recovered.
+ */
+async function linkOrRecover(cardId: Hex): Promise<{ address: Address; linkTx: Hex | null }> {
+  const existing = await walletOfCard(cardId);
+  if (existing !== zeroAddress) {
+    console.warn(`card ${cardId} already linked on-chain to ${existing} with no DB row: recovering that wallet`);
+    return { address: existing, linkTx: null };
+  }
+  const address = newAddress();
+  try {
+    return { address, linkTx: await linkCard(cardId, address) };
+  } catch (err) {
+    // A concurrent registration won the race, or our tx landed but waiting for the receipt failed.
+    const after = await walletOfCard(cardId).catch(() => zeroAddress);
+    if (after !== zeroAddress) return { address: after, linkTx: null };
+    throw err;
+  }
 }
 
 export async function createMerchant(name: string, deviceAddress?: string): Promise<MerchantRow> {

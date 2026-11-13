@@ -90,7 +90,7 @@ export default function Cashier() {
               setView({ kind: 'busy', text: 'Creating the wallet and linking the ID on-chain…' })
               try {
                 const res = await api.link(key, { uid: view.tap.uid, ...b })
-                const done: Done = { title: 'ID linked', name: b.name || b.studentNo, studentNo: b.studentNo, balance: 0, txHash: res.linkTx, address: res.address }
+                const done: Done = { title: 'ID linked', name: b.name || b.studentNo, studentNo: b.studentNo, balance: 0, txHash: res.linkTx ?? undefined, address: res.address }
                 setView({ kind: 'write', tap: view.tap, card: res.card, done })
               } catch (e) {
                 setView({ kind: 'error', message: errorText(e) })
