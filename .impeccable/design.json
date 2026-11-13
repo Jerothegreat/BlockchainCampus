@@ -1,0 +1,633 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-13T05:20:59.268Z",
+  "title": "Design System: HeronPay",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Tender Gold (proposed)",
+        "canonical": "#F2C230",
+        "oklch": "oklch(83.4% 0.158 89.0)",
+        "tonalRamp": [
+          "#170700",
+          "#392100",
+          "#5F3E00",
+          "#885E00",
+          "#AB8300",
+          "#CBAA50",
+          "#E9CE8A",
+          "#FFEDB8"
+        ]
+      },
+      "cta": {
+        "role": "primary",
+        "displayName": "Tender Gold action fill (proposed)",
+        "canonical": "#F2C230",
+        "oklch": "oklch(83.4% 0.158 89.0)",
+        "tonalRamp": [
+          "#170700",
+          "#392100",
+          "#5F3E00",
+          "#885E00",
+          "#AB8300",
+          "#CBAA50",
+          "#E9CE8A",
+          "#FFEDB8"
+        ]
+      },
+      "light-primary": {
+        "role": "primary",
+        "displayName": "Tender Gold Deep (proposed)",
+        "canonical": "#6F5400",
+        "oklch": "oklch(46.1% 0.094 87.0)",
+        "tonalRamp": [
+          "#130900",
+          "#332400",
+          "#56420B",
+          "#7C6220",
+          "#9F864B",
+          "#C1AC7C",
+          "#E0CFA9",
+          "#FBEDCF"
+        ]
+      },
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Carbon Copy Blue (proposed)",
+        "canonical": "#9DB4FF",
+        "oklch": "oklch(78.1% 0.111 270.6)",
+        "tonalRamp": [
+          "#050820",
+          "#1A2347",
+          "#344173",
+          "#5062A2",
+          "#7386C5",
+          "#9BACE2",
+          "#C1D0FC",
+          "#E1EEFF"
+        ]
+      },
+      "secondary-container": {
+        "role": "secondary",
+        "displayName": "Carbon Copy Blue container (proposed)",
+        "canonical": "#37415E",
+        "oklch": "oklch(37.9% 0.052 269.3)",
+        "tonalRamp": [
+          "#070B15",
+          "#202636",
+          "#3C445B",
+          "#5B6583",
+          "#7E88A6",
+          "#A4ADC7",
+          "#C9D1E5",
+          "#E8EEFF"
+        ]
+      },
+      "light-secondary": {
+        "role": "secondary",
+        "displayName": "Carbon Copy Blue, light (proposed)",
+        "canonical": "#2A4FC0",
+        "oklch": "oklch(47.3% 0.182 265.8)",
+        "tonalRamp": [
+          "#01042D",
+          "#0C1F5C",
+          "#203C90",
+          "#365CC7",
+          "#5A83EA",
+          "#86ABFF",
+          "#B0D0FF",
+          "#D4EEFF"
+        ]
+      },
+      "tertiary-container": {
+        "role": "tertiary",
+        "displayName": "Pending Ink Blue container (proposed)",
+        "canonical": "#3B445E",
+        "oklch": "oklch(39.0% 0.046 269.5)",
+        "tonalRamp": [
+          "#080B14",
+          "#212635",
+          "#3D4459",
+          "#5C6580",
+          "#7F89A3",
+          "#A5AEC4",
+          "#CAD1E3",
+          "#E9EEFD"
+        ]
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Settled Green",
+        "canonical": "#7CDCA6",
+        "oklch": "oklch(82.1% 0.120 157.7)",
+        "tonalRamp": [
+          "#001103",
+          "#003117",
+          "#005330",
+          "#13794C",
+          "#499D70",
+          "#7EBF99",
+          "#ACDFC0",
+          "#D1FAE1"
+        ]
+      },
+      "warning": {
+        "role": "status",
+        "displayName": "Offline Amber",
+        "canonical": "#F7B866",
+        "oklch": "oklch(82.5% 0.123 71.9)",
+        "tonalRamp": [
+          "#190600",
+          "#3C1E00",
+          "#643A00",
+          "#8E5900",
+          "#B27D35",
+          "#D1A56D",
+          "#EFCA9E",
+          "#FFE9C6"
+        ]
+      },
+      "error": {
+        "role": "status",
+        "displayName": "Flag Red",
+        "canonical": "#FFB4AB",
+        "oklch": "oklch(83.8% 0.089 26.8)",
+        "tonalRamp": [
+          "#190403",
+          "#3D1B17",
+          "#653530",
+          "#90524C",
+          "#B4766F",
+          "#D49F98",
+          "#F1C5BF",
+          "#FFE5E0"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Night Counter Navy (proposed)",
+        "canonical": "#10141F",
+        "oklch": "oklch(19.3% 0.023 268.8)",
+        "tonalRamp": [
+          "#090B10",
+          "#23262E",
+          "#41454F",
+          "#616673",
+          "#848996",
+          "#A9AEB9",
+          "#CDD1DA",
+          "#EBEEF6"
+        ]
+      },
+      "light-surface": {
+        "role": "neutral",
+        "displayName": "Daylight Counter Grey (proposed)",
+        "canonical": "#F2F4F8",
+        "oklch": "oklch(96.7% 0.006 264.5)",
+        "tonalRamp": [
+          "#0B0B0C",
+          "#252628",
+          "#444547",
+          "#646669",
+          "#87898C",
+          "#ACAEB1",
+          "#D0D1D3",
+          "#EDEEF0"
+        ]
+      },
+      "on-surface-variant": {
+        "role": "neutral",
+        "displayName": "Ledger Mist",
+        "canonical": "#ABAEB7",
+        "oklch": "oklch(75.1% 0.013 271.2)",
+        "tonalRamp": [
+          "#0A0B0E",
+          "#25262B",
+          "#43454B",
+          "#63666E",
+          "#868991",
+          "#ABAEB4",
+          "#CFD1D6",
+          "#EDEEF3"
+        ]
+      },
+      "outline": {
+        "role": "neutral",
+        "displayName": "Ledger Mist outline",
+        "canonical": "#7C7F89",
+        "oklch": "oklch(59.7% 0.016 272.6)",
+        "tonalRamp": [
+          "#0A0B0E",
+          "#25262B",
+          "#43454C",
+          "#63666F",
+          "#868992",
+          "#ABAEB5",
+          "#CFD1D7",
+          "#EDEEF3"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Thermal Paper (proposed)",
+        "canonical": "#F3F0E6",
+        "oklch": "oklch(95.5% 0.014 93.0)",
+        "tonalRamp": [
+          "#0C0B08",
+          "#282622",
+          "#47453F",
+          "#68665E",
+          "#8B8981",
+          "#B0AEA7",
+          "#D3D1CB",
+          "#F0EEEA"
+        ]
+      },
+      "light-paper": {
+        "role": "neutral",
+        "displayName": "Thermal Paper, light (proposed)",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#AEAEAE",
+          "#D1D1D1",
+          "#EEEEEE"
+        ]
+      },
+      "on-paper": {
+        "role": "neutral",
+        "displayName": "Thermal Ink (proposed)",
+        "canonical": "#1D1C18",
+        "oklch": "oklch(22.6% 0.008 95.4)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#272624",
+          "#464541",
+          "#676661",
+          "#8A8985",
+          "#AFAEAA",
+          "#D2D1CE",
+          "#EFEEEC"
+        ]
+      },
+      "paper-muted": {
+        "role": "neutral",
+        "displayName": "Faded Thermal (proposed)",
+        "canonical": "#6E6D66",
+        "oklch": "oklch(53.3% 0.011 100.1)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#272723",
+          "#464540",
+          "#676660",
+          "#8A8983",
+          "#AFAEA9",
+          "#D2D1CC",
+          "#EFEFEB"
+        ]
+      },
+      "stamp": {
+        "role": "stamp",
+        "displayName": "Settled Stamp Green (proposed)",
+        "canonical": "#146C43",
+        "oklch": "oklch(47.1% 0.104 157.2)",
+        "tonalRamp": [
+          "#001104",
+          "#002F19",
+          "#145233",
+          "#2B774F",
+          "#569A73",
+          "#86BD9B",
+          "#B1DDC2",
+          "#D6F9E2"
+        ]
+      },
+      "stamp-pending": {
+        "role": "stamp",
+        "displayName": "Pending Stamp Blue (proposed)",
+        "canonical": "#2E4FB8",
+        "oklch": "oklch(46.8% 0.170 266.5)",
+        "tonalRamp": [
+          "#01052B",
+          "#0F2059",
+          "#243D8B",
+          "#3B5DC1",
+          "#5F83E4",
+          "#8AABFD",
+          "#B3D0FF",
+          "#D7EEFF"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "hero": {
+        "displayName": "Hero",
+        "purpose": "Landing h1 only: 2.75 / 4 / 4.5 / 5.5rem at base / 600 / 1200 / 1600 px; never above 5.5rem."
+      },
+      "display-m": {
+        "displayName": "Display M",
+        "purpose": "The amount being charged, loaded or available."
+      },
+      "display-s": {
+        "displayName": "Display S",
+        "purpose": "Totals on success and Today screens."
+      },
+      "headline-s": {
+        "displayName": "Headline S",
+        "purpose": "Dialog titles, tap-target instructions, keypad digits."
+      },
+      "title-l": {
+        "displayName": "Title L",
+        "purpose": "Top app bar titles."
+      },
+      "body-l": {
+        "displayName": "Body L",
+        "purpose": "Explanations, list headlines."
+      },
+      "label-l": {
+        "displayName": "Label L",
+        "purpose": "Buttons, chips, navigation."
+      },
+      "data": {
+        "displayName": "Data (mono)",
+        "purpose": "Slip rows, hashes, receipt ids, student numbers. Data only."
+      },
+      "data-total": {
+        "displayName": "Data Total",
+        "purpose": "The TOTAL amount on the slip."
+      },
+      "stamp": {
+        "displayName": "Stamp",
+        "purpose": "SETTLED / PENDING stamp word, uppercase."
+      }
+    },
+    "themes": {
+      "default": "dark",
+      "note": "Dark keys are unprefixed; light-theme values that differ use the light- prefix. cta, on-cta, on-paper, stamp, stamp-pending and scrim are shared."
+    },
+    "shadows": [
+      {
+        "name": "level-3-dark",
+        "value": "0 1px 3px rgba(0,0,0,.45), 0 4px 10px 3px rgba(0,0,0,.3)",
+        "purpose": "Extended FAB, snackbar, dialogs (dark theme)."
+      },
+      {
+        "name": "level-3-light",
+        "value": "0 1px 3px rgba(0,0,0,.18), 0 4px 10px 3px rgba(0,0,0,.1)",
+        "purpose": "Extended FAB, snackbar, dialogs (light theme)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-emphasized",
+        "value": "cubic-bezier(.2,0,0,1)",
+        "purpose": "Default easing: state layers, status changes, stamp landing."
+      },
+      {
+        "name": "ease-emphasized-decelerate",
+        "value": "cubic-bezier(.05,.7,.1,1)",
+        "purpose": "Entrances: slip print-in, snackbar."
+      },
+      {
+        "name": "duration-state",
+        "value": "200ms",
+        "purpose": "State layer, status chip change, stamp landing (scale 1.6 to 1, rotated -9deg)."
+      },
+      {
+        "name": "duration-screen",
+        "value": "300ms",
+        "purpose": "Screen changes (M3 medium2) and snackbar entrance."
+      },
+      {
+        "name": "slip-print",
+        "value": "400ms ease-emphasized-decelerate, clip-path inset(0 0 100% 0) to inset(0)",
+        "purpose": "Approved prints the receipt slip from the top."
+      },
+      {
+        "name": "nfc-ring",
+        "value": "1.6s ease-out infinite, scale .88 to 1.22, opacity .9 to 0",
+        "purpose": "NFC tap target pulse."
+      },
+      {
+        "name": "scan-sweep",
+        "value": "1.2s linear infinite alternate",
+        "purpose": "QR scanner line."
+      },
+      {
+        "name": "pos-countdown",
+        "value": "20s linear",
+        "purpose": "POS Approved auto-return progress."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none; transition: none",
+        "purpose": "All motion off under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "medium",
+        "value": "600px",
+        "note": "navigation rail replaces the bar; gutter 24"
+      },
+      {
+        "name": "expanded",
+        "value": "840px",
+        "note": "app column gains outline-variant side borders; landing nav links appear"
+      },
+      {
+        "name": "large",
+        "value": "1200px",
+        "note": "landing hero splits (560 px demo); /ops 380 + fluid; gutter 32"
+      },
+      {
+        "name": "xlarge",
+        "value": "1600px",
+        "note": "landing container 1440, demo 640, /ops 440 + fluid; gutter 40"
+      },
+      {
+        "name": "wide",
+        "value": "1920px",
+        "note": "full-bleed bands stop and centre"
+      }
+    ],
+    "layout": {
+      "appColumnMax": "600px",
+      "touchTargetMin": "48px",
+      "landingContainer": [
+        "1200px",
+        "1440px from 1600px"
+      ],
+      "opsMax": "1760px",
+      "m3Verified": false,
+      "m3Note": "M3 numbers come from the published spec; not fetched and verified during the design session."
+    },
+    "placeholders": [
+      "primary/cta gold #F2C230 stands in for UMak gold until the team confirms the school colours.",
+      "All names marked (proposed) await owner confirmation."
+    ]
+  },
+  "components": [
+    {
+      "name": "Filled Button",
+      "kind": "button",
+      "refersTo": "button-filled-large",
+      "description": "The one gold action per screen; 56 px for the main call to action.",
+      "html": "<button class=\"ds-btn-filled\">Charge ₱85.00</button>",
+      "css": ".ds-btn-filled{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;height:56px;padding:0 28px;border:0;border-radius:9999px;background:var(--cta);color:var(--on-cta);font:600 1rem/1.5rem Sora,Manrope,system-ui,sans-serif;cursor:pointer}.ds-btn-filled::after{content:\"\";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .2s cubic-bezier(.2,0,0,1);border-radius:inherit;pointer-events:none;}.ds-btn-filled:hover::after{opacity:.08}.ds-btn-filled:active::after{opacity:.12}.ds-btn-filled:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Cancel, Log out and other secondary actions.",
+      "html": "<button class=\"ds-btn-outlined\">Cancel</button>",
+      "css": ".ds-btn-outlined{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;position:relative;overflow:hidden;isolation:isolate;height:40px;padding:0 24px;border:1px solid var(--outline);border-radius:9999px;background:transparent;color:var(--primary);font:600 .875rem/1.25rem Manrope,system-ui,sans-serif;cursor:pointer}.ds-btn-outlined::after{content:\"\";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .2s cubic-bezier(.2,0,0,1);border-radius:inherit;pointer-events:none;}.ds-btn-outlined:hover::after{opacity:.08}.ds-btn-outlined:active::after{opacity:.12}.ds-btn-outlined:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+    },
+    {
+      "name": "Extended FAB",
+      "kind": "button",
+      "refersTo": "fab-extended",
+      "description": "One per screen, for its single primary action (/me: Scan receipt).",
+      "html": "<button class=\"ds-fab\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M3 11h8V3H3v8Zm2-6h4v4H5V5Zm8-2v8h8V3h-8Zm6 6h-4V5h4v4ZM3 21h8v-8H3v8Zm2-6h4v4H5v-4Zm13 0h-2v2h2v-2Zm-2 2h-2v2h2v-2Zm4 0h-2v2h2v-2Zm-2 2h-2v2h2v-2Zm-4 0h-2v2h2v-2Zm6-4h-2v2h2v-2Zm-4 0h-2v2h2v-2Z\"/></svg>Scan receipt</button>",
+      "css": ".ds-fab{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;gap:12px;height:56px;padding:0 20px 0 16px;border:0;border-radius:16px;background:var(--cta);color:var(--on-cta);font:700 .875rem/1.25rem Manrope,system-ui,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.45),0 4px 10px 3px rgba(0,0,0,.3);cursor:pointer}.ds-fab::after{content:\"\";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .2s cubic-bezier(.2,0,0,1);border-radius:inherit;pointer-events:none;}.ds-fab:hover::after{opacity:.08}.ds-fab:active::after{opacity:.12}.ds-fab:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+    },
+    {
+      "name": "Filled Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "M3 filled field; the bottom stroke turns gold and thickens on focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Student number</span><input class=\"ds-field-input\" value=\"K12345678\"></label>",
+      "css": ".ds-field{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;display:flex;flex-direction:column;justify-content:flex-end;height:56px;padding:0 16px 8px;box-sizing:border-box;width:280px;border-radius:4px 4px 0 0;border-bottom:1px solid var(--on-surface-variant);background:var(--surface-container-highest)}.ds-field:focus-within{border-bottom:2px solid var(--primary)}.ds-field-label{font:400 .75rem/1rem Manrope,system-ui,sans-serif;color:var(--on-surface-variant)}.ds-field-input{border:0;background:transparent;outline:none;color:var(--on-surface);font:400 1rem/1.5rem Manrope,system-ui,sans-serif;padding:0}"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "navigation-bar",
+      "description": "Bottom navigation below 600 px; becomes an 80 px rail from 600 px.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item is-active\" href=\"#\"><span class=\"ds-nav-ind\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z\"/></svg></span>Home</a><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-nav-ind\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M19.5 3.5 18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v20l1.5-1.5L6 22l1.5-1.5L9 22l1.5-1.5L12 22l1.5-1.5L15 22l1.5-1.5L18 22l1.5-1.5L21 22V2l-1.5 1.5ZM18 17H6v-2h12v2Zm0-4H6v-2h12v2Zm0-4H6V7h12v2Z\"/></svg></span>Activity</a></nav>",
+      "css": ".ds-nav{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;display:grid;grid-template-columns:repeat(2,1fr);height:80px;width:320px;background:var(--surface-container)}.ds-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 0 16px;color:var(--on-surface-variant);text-decoration:none;font:600 .75rem/1rem Manrope,system-ui,sans-serif}.ds-nav-ind{display:grid;place-items:center;width:64px;height:32px;border-radius:9999px;transition:background-color .2s cubic-bezier(.2,0,0,1)}.ds-nav-item:hover .ds-nav-ind{background:color-mix(in srgb,var(--on-surface) 8%,transparent)}.ds-nav-item.is-active{color:var(--on-surface)}.ds-nav-item.is-active .ds-nav-ind{background:var(--secondary-container);color:var(--on-secondary-container)}.ds-nav-item:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}"
+    },
+    {
+      "name": "Status and Network Chips",
+      "kind": "chip",
+      "refersTo": "status-chip-settled",
+      "description": "Every payment state carries a filled icon and a word, never colour alone.",
+      "html": "<span class=\"ds-status ds-status-ok\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-2 15-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9Z\"/></svg>Settled</span> <span class=\"ds-status ds-status-pend\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm.5 5v5.25l4.5 2.67-.75 1.23L11 13V7h1.5Z\"/></svg>Pending</span> <span class=\"ds-net\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M19.35 10.04A7.49 7.49 0 0 0 12 4c-1.48 0-2.85.43-4.01 1.17l1.46 1.46A5.5 5.5 0 0 1 17.5 11v.5H19a3 3 0 0 1 2.2 5.03l1.42 1.42A5 5 0 0 0 19.35 10.04ZM3 5.27l2.75 2.74C2.56 8.15 0 10.77 0 14c0 3.31 2.69 6 6 6h11.73l2 2L21 20.73 4.27 4 3 5.27ZM7.73 10l8 8H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h1.73Z\"/></svg>Offline</span>",
+      "css": ".ds-status{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px 0 6px;border-radius:8px;font:700 .75rem/1rem Manrope,system-ui,sans-serif;letter-spacing:.031rem}.ds-status-ok{background:var(--success-container);color:var(--on-success-container)}.ds-status-pend{background:var(--tertiary-container);color:var(--on-tertiary-container)}.ds-net{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:8px;background:var(--warning-container);color:var(--on-warning-container);font:600 .875rem/1.25rem Manrope,system-ui,sans-serif}"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-filter-selected",
+      "description": "Activity filters; selected takes Carbon Copy Blue with a check.",
+      "html": "<button class=\"ds-chip is-sel\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z\"/></svg>All</button> <button class=\"ds-chip\">Pending</button>",
+      "css": ".ds-chip{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--outline);border-radius:8px;background:transparent;color:var(--on-surface-variant);font:600 .875rem/1.25rem Manrope,system-ui,sans-serif;cursor:pointer}.ds-chip.is-sel{border-color:transparent;background:var(--secondary-container);color:var(--on-secondary-container)}.ds-chip::after{content:\"\";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .2s cubic-bezier(.2,0,0,1);border-radius:inherit;pointer-events:none;}.ds-chip:hover::after{opacity:.08}.ds-chip:active::after{opacity:.12}.ds-chip:focus-visible{outline:2px solid var(--primary);outline-offset:2px}"
+    },
+    {
+      "name": "Balance Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Tonal card, no shadow; the balance is plain, never a faux bank card.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-l\">Available</p><p class=\"ds-card-v\">₱415.00</p><p class=\"ds-card-d\">₱500.00 on chain, ₱85.00 pending</p></div>",
+      "css": ".ds-card{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;width:300px;padding:16px;border-radius:12px;background:var(--surface-container-low);color:var(--on-surface)}.ds-card p{margin:0}.ds-card-l{font:600 .875rem/1.25rem Manrope,system-ui,sans-serif;color:var(--on-surface-variant)}.ds-card-v{font:600 2.8125rem/3.25rem Sora,Manrope,sans-serif;font-variant-numeric:tabular-nums}.ds-card-d{margin-top:4px!important;font:400 .875rem/1.25rem 'JetBrains Mono',ui-monospace,monospace;color:var(--on-surface-variant)}"
+    },
+    {
+      "name": "Receipt Slip with Stamp",
+      "kind": "custom",
+      "refersTo": "receipt-slip",
+      "description": "Signature: thermal-paper slip with torn edges, mono rows, TOTAL and the SETTLED stamp in reserved space. Prints in 400 ms; the stamp lands 200 ms.",
+      "html": "<div class=\"ds-slip\"><p class=\"ds-slip-h\">Kuya's Grill</p><p class=\"ds-slip-sub\">HeronPay receipt, Nov 13 2026 10:41</p><hr class=\"ds-slip-rule\"><dl class=\"ds-slip-rows\"><dt>Rice meal</dt><dd>85.00</dd><dt class=\"ds-slip-m\">Paid by</dt><dd class=\"ds-slip-m\">Juan D. …5E:80</dd></dl><hr class=\"ds-slip-rule\"><div class=\"ds-slip-total\"><span>TOTAL</span><span>₱85.00</span></div><p class=\"ds-slip-id\">id 7c1e9a40-55b2-4d1f</p><div class=\"ds-stamp\" aria-hidden=\"true\">SETTLED<small>block 52,418,903</small></div></div>",
+      "css": ".ds-slip{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;position:relative;width:300px;box-sizing:border-box;padding:28px 20px 96px;background:var(--paper);color:var(--on-paper);-webkit-mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x;mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x;animation:ds-print .4s cubic-bezier(.05,.7,.1,1) both}.ds-slip p{margin:0}.ds-slip-h{text-align:center;font:700 1rem/1.5rem Sora,sans-serif}.ds-slip-sub,.ds-slip-id{text-align:center;color:var(--paper-muted);font:400 .75rem/1rem 'JetBrains Mono',ui-monospace,monospace}.ds-slip-id{margin-top:12px!important;font-size:.6875rem}.ds-slip-rule{margin:12px 0;border:0;border-top:1px dashed var(--paper-muted)}.ds-slip-rows{display:grid;grid-template-columns:1fr auto;row-gap:4px;margin:0;font:400 .875rem/1.25rem 'JetBrains Mono',ui-monospace,monospace}.ds-slip-rows dd{margin:0}.ds-slip-rows .ds-slip-m{color:var(--paper-muted)}.ds-slip-total{display:flex;justify-content:space-between;align-items:baseline;font:400 .875rem/1.25rem 'JetBrains Mono',ui-monospace,monospace}.ds-slip-total span+span{font-size:1.5rem;line-height:2rem;font-weight:600;font-variant-numeric:tabular-nums}.ds-stamp{position:absolute;right:16px;bottom:30px;transform:rotate(-9deg);border:3px solid currentColor;border-radius:6px;padding:4px 10px;color:var(--stamp);background:color-mix(in srgb,var(--paper) 70%,transparent);font:700 18px/1.1 Sora,sans-serif;letter-spacing:.08em;text-align:center;animation:ds-stamp .2s cubic-bezier(.2,0,0,1) .4s both}.ds-stamp small{display:block;font:600 11px/1.2 'JetBrains Mono',monospace;letter-spacing:.02em}@keyframes ds-print{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}@keyframes ds-stamp{from{transform:rotate(-9deg) scale(1.6);opacity:0}to{transform:rotate(-9deg) scale(1);opacity:1}}@media (prefers-reduced-motion:reduce){.ds-slip,.ds-stamp{animation:none}}"
+    },
+    {
+      "name": "NFC Tap Target",
+      "kind": "custom",
+      "refersTo": "tap-target",
+      "description": "176 px circle with a gold ring pulsing on a 1.6 s loop; where the student taps the ID.",
+      "html": "<div class=\"ds-tap\"><span class=\"ds-tap-ring\"></span><svg width=\"72\" height=\"72\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M8.5 8.5a5 5 0 0 1 0 7M12 6a8.5 8.5 0 0 1 0 12M15.5 3.5a12 12 0 0 1 0 17M5 11a1.5 1.5 0 0 1 0 2\"/></svg></div>",
+      "css": ".ds-tap{--cta:#F2C230;--on-cta:#261C00;--primary:#F2C230;--surface:#10141F;--on-surface:#E7EAF2;--on-surface-variant:#ABAEB7;--outline:#7C7F89;--secondary-container:#37415E;--on-secondary-container:#BBCAFA;--surface-container-low:#181B26;--surface-container:#1D212C;--surface-container-high:#232732;--surface-container-highest:#2C303A;--paper:#F3F0E6;--on-paper:#1D1C18;--paper-muted:#6E6D66;--stamp:#146C43;--stamp-pending:#2E4FB8;--success-container:#2E4C45;--on-success-container:#A7E2C4;--tertiary-container:#3B445E;--on-tertiary-container:#C1D1FA;--warning-container:#514233;--on-warning-container:#F1CC9E;position:relative;display:grid;place-items:center;width:176px;height:176px;border-radius:50%;background:var(--surface-container-high);color:var(--primary)}.ds-tap-ring{position:absolute;inset:0;border:2px solid var(--primary);border-radius:50%;animation:ds-ring 1.6s ease-out infinite}@keyframes ds-ring{0%{transform:scale(.88);opacity:.9}100%{transform:scale(1.22);opacity:0}}@media (prefers-reduced-motion:reduce){.ds-tap-ring{animation:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Printed Proof",
+    "overview": "The receipt is the product's proof, so HeronPay draws every payment as the subject's own artifact: a torn thermal-paper slip laid on a deep navy counter at night. Approved prints the slip from the top down; Settled stamps it with the block number. The slip is the one warm, paper-coloured thing on screen, which is why it reads as the object of record and everything around it reads as the machine.\n\nStructure is Material 3 at default density (top app bar 64, navigation bar 80, list items 72), so the app feels like a well-behaved Android citizen; the look comes from the palette, the slip and the stamp, not from bending M3. Gold is the one action colour and appears where a thumb should go. Amounts, receipt ids, hashes and student numbers are set in JetBrains Mono because they are data, the same way a till prints them. Dark is the default theme; light is fully designed, with white slips on a cool grey ground.\n\nThe world refuses the generic wallet-card dashboard: no faux bank card, no gradient balance hero. The balance is a plain tonal card; the payment is a slip.",
+    "keyCharacteristics": [
+      "Deep navy ground, warm paper slips, one gold action colour.",
+      "Thermal receipt slip with zig-zag torn edges, mono data rows and a TOTAL line as the signature object.",
+      "Rubber stamps (SETTLED green with block number, PENDING blue) in reserved space at the slip foot.",
+      "Material 3 components and type roles at default density; tonal elevation.",
+      "Sora for display through title, Manrope for body and label, JetBrains Mono only for data.",
+      "Motion is functional and short: print 400 ms, stamp 200 ms, all of it off under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The One Gold Rule",
+        "body": "A gold fill means \"press here\". It fills the filled button, the extended FAB and the wordmark tile, nothing else; avatars, decoration and illustration take Carbon Copy Blue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Is Proof Rule",
+        "body": "Paper and its inks appear only on the receipt slip. A surface painted paper-colour is claiming to be a receipt.",
+        "section": "colors"
+      },
+      {
+        "name": "The Placeholder Gold Rule",
+        "body": "The gold is a stand-in until UMak's colours are confirmed. When they land, change the seeds (`primary`, `primaryContainer` and their on-colours in both themes) and re-check every contrast pair; nothing else hardcodes gold.",
+        "section": "colors"
+      },
+      {
+        "name": "The Data Wears Mono Rule",
+        "body": "If a value could be copied into a block explorer or a ledger (amount on a slip, hash, receipt id, student number, UID), it is set in JetBrains Mono. Names, labels and sentences never are.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Amount Rule",
+        "body": "Every peso amount uses tabular figures so columns of amounts align.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tonal Depth Rule",
+        "body": "Cards, lists, slips and bars never cast a shadow. A shadow means the element floats above the page and will go away (FAB, snackbar, dialog).",
+        "section": "elevation"
+      },
+      {
+        "name": "The Reserved Stamp Rule",
+        "body": "A stamp only appears where the slip has made room for it. If a stamp would overlap text, the slip grows; the stamp never moves up.",
+        "section": "components"
+      },
+      {
+        "name": "The Honest Stamp Rule",
+        "body": "SETTLED appears only once the chain has confirmed the payment and always carries the block number; until then the slip says PENDING.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** show a payment as one object on the receipt slip (POS Approved, student Receipt, landing demo, onboarding page 3), and keep payment lists as 72 px M3 list items with status chips.",
+      "**Do** reserve 96 px at the foot of any stamped slip and anchor the stamp inside it.",
+      "**Do** set amounts on slips, hashes, receipt ids, student numbers and UIDs in JetBrains Mono, with tabular figures for every peso amount.",
+      "**Do** pair every Pending, Settled, Failed and Flagged state with a word and a filled icon.",
+      "**Do** give avatars, including the profile monogram, Carbon Copy Blue (`secondary-container`); gold is for action.",
+      "**Do** keep the QR code black on white in both themes.",
+      "**Do** design every screen in dark (default) and light, holding 4.5:1 for text in both, paper and stamp pairs included.",
+      "**Do** use M3 emphasized easing `cubic-bezier(.2,0,0,1)`: screen changes 300 ms, status changes 200 ms; and turn all animation and transitions off under `prefers-reduced-motion`.",
+      "**Do** label every sample name, stall, transaction and stat with the dashed \"Sample\" tag until real data exists."
+    ],
+    "donts": [
+      "**Don't** fill anything gold that is not an action (decorative circles, chat bubbles, icon tiles); the wordmark tile is the only exception.",
+      "**Don't** paint any non-receipt surface in paper colours.",
+      "**Don't** let a stamp cover slip text, or stamp SETTLED without a block number.",
+      "**Don't** draw the balance as a bank card or wallet card with gradients; it is a plain tonal card.",
+      "**Don't** add shadows to cards, slips, lists or bars; level-3 shadow is for the FAB, snackbar and dialogs only.",
+      "**Don't** set names, labels or sentences in mono.",
+      "**Don't** put eyebrow labels above headings or thick coloured side borders on cards.",
+      "**Don't** take the landing hero above 5.5rem."
+    ]
+  }
+}
