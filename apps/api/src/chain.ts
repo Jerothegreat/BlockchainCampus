@@ -19,15 +19,15 @@ const transport = http(config.rpcUrl);
 
 export const abi = parseAbi([
   "function balanceOf(address) view returns (uint256)",
-  "function mint(address to, uint256 amount)",
+  "function topUp(address to, uint256 amount, string orNumber)",
   "function settleBatch((bytes32 id, address from, address to, uint256 amount)[] ps)",
   "event PaymentSettled(bytes32 indexed id, address from, address to, uint256 amount)",
   "event PaymentFailed(bytes32 indexed id, string reason)",
 ]);
 
 // BSC testnet rejects EIP-1559 txs whose priority fee is under 0.1 gwei, and viem/cast
-// default the tip to ~1 wei. Legacy txs at a flat 1 gwei avoid that entirely.
-const txFees = { type: "legacy", gasPrice: parseGwei("1") } as const;
+// default the tip to ~1 wei. Legacy txs at a flat gas price avoid that entirely.
+const txFees = { type: "legacy", gasPrice: parseGwei(config.gasPriceGwei) } as const;
 
 export const publicClient = createPublicClient({ chain, transport });
 const relayer = createWalletClient({ chain, transport, account: privateKeyToAccount(config.relayerKey) });
@@ -57,21 +57,22 @@ export async function balanceOf(address: Address): Promise<bigint> {
   return publicClient.readContract({ address: config.contract, abi, functionName: "balanceOf", args: [address] });
 }
 
-export const canMint = () => deployer !== undefined;
+export const canTopUp = () => deployer !== undefined;
 export const signers = { relayer: relayer.account.address, deployer: deployer?.account.address };
 
-export function mint(to: Address, amount: bigint): Promise<Hex> {
+/** Cashier received cash → mint the same amount of tPHP, tagged with the official-receipt number. */
+export function topUp(to: Address, amount: bigint, orNumber: string): Promise<Hex> {
   if (!deployer) throw new Error("DEPLOYER_PRIVATE_KEY not configured");
   return deployerQueue(async () => {
     const hash = await deployer.writeContract({
       address: config.contract,
       abi,
-      functionName: "mint",
-      args: [to, amount],
+      functionName: "topUp",
+      args: [to, amount, orNumber],
       ...txFees,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    if (receipt.status !== "success") throw new Error(`mint reverted: ${hash}`);
+    if (receipt.status !== "success") throw new Error(`topUp reverted: ${hash}`);
     return hash;
   });
 }

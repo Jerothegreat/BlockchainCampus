@@ -28,7 +28,9 @@ export const config = {
   chainId: Number(process.env.CHAIN_ID ?? 97),
   contract: getAddress(required("CONTRACT")),
   relayerKey: asKey(required("RELAYER_PRIVATE_KEY")),
-  // Optional: only needed for POST /mint (cashier fallback when MetaMask is unavailable).
+  // BSC testnet minimum is 0.1 gwei; sent as a legacy tx so the whole price counts as the tip.
+  gasPriceGwei: process.env.GAS_PRICE_GWEI ?? "1",
+  // Optional: only needed for POST /topup (cashier fallback when MetaMask is unavailable).
   deployerKey: optionalKey("DEPLOYER_PRIVATE_KEY"),
   cashierKey: process.env.CASHIER_KEY,
   defaultOfflineCap: Number(process.env.DEFAULT_OFFLINE_CAP ?? 10000), // centavos (₱100)

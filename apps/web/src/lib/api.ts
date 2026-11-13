@@ -20,7 +20,7 @@ export type Student = {
   offlineCap: number // centavos
 }
 export type Merchant = { id: string; name: string; address: string }
-export type MintResult = { txHash: string; explorer?: string }
+export type TopUpResult = { txHash: string; explorer?: string }
 
 async function request<T>(path: string, init: RequestInit & { cashierKey?: string } = {}): Promise<T> {
   const { cashierKey, ...rest } = init
@@ -45,8 +45,8 @@ export const api = {
   studentByUid: (uidHash: string) => request<Student>(`/students/by-uid/${uidHash}`),
   link: (cashierKey: string, body: { uid: string; studentNo: string; name?: string; pin: string }) =>
     request<{ uidHash: string; address: string }>('/link', { method: 'POST', body: JSON.stringify(body), cashierKey }),
-  mint: (cashierKey: string, uidHash: string, amount: number) =>
-    request<MintResult>('/mint', { method: 'POST', body: JSON.stringify({ uidHash, amount }), cashierKey }),
+  topUp: (cashierKey: string, uidHash: string, amount: number, orNumber: string) =>
+    request<TopUpResult>('/topup', { method: 'POST', body: JSON.stringify({ uidHash, amount, orNumber }), cashierKey }),
   merchants: () => request<Merchant[]>('/merchants'),
   addMerchant: (cashierKey: string, name: string) =>
     request<Merchant>('/merchants', { method: 'POST', body: JSON.stringify({ name }), cashierKey }),
@@ -58,7 +58,7 @@ const messages: Record<string, string> = {
   CASHIER_KEY_NOT_CONFIGURED: 'Server has no CASHIER_KEY set.',
   ALREADY_LINKED: 'This ID or student number is already linked.',
   CHAIN_UNAVAILABLE: 'Blockchain network unavailable. Try again in a moment.',
-  MINT_NOT_CONFIGURED: 'Server has no DEPLOYER_PRIVATE_KEY set.',
+  TOPUP_NOT_CONFIGURED: 'Server has no DEPLOYER_PRIVATE_KEY set.',
   STUDENT_NOT_FOUND: 'This ID is not linked yet.',
 }
 
