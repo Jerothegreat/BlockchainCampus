@@ -10,6 +10,8 @@ export type QueuedReceipt = Receipt & {
   txHash: string | null
   blockNumber: number | null
   failReason: string | null
+  /** Student list rows: a cashier top-up shows as a credit. Default: a payment. */
+  kind?: 'payment' | 'topup'
 }
 export type PinLock = { uidHash: string; tries: number; until: number }
 export type Meta = { key: string; value: unknown }
