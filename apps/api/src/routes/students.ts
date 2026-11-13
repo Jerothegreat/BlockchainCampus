@@ -97,7 +97,7 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
         name: row.name,
         address: row.address,
         balance: Number(balance),
-        offlineCap: row.offline_cap,
+        offlineCap: Math.min(row.offline_cap, Number(balance)),
       };
     },
   );
