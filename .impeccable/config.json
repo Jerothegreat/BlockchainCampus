@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "material symbols rounded",
+        "createdAt": "2026-11-13T05:31:06.756Z",
+        "reason": "design-brief.md rule 7: icons are Material Symbols Rounded (icon font, not a text face)"
+      },
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "apps/web/src/ui/index.tsx"
+        ],
+        "createdAt": "2026-11-13T05:46:29.724Z",
+        "reason": "M3 filled text field active indicator: border-b on a field rounded only at the top (4 4 0 0), per design-brief.md shape rules and board-A cashier-link.html"
+      }
+    ]
+  }
+}

@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useNfc, type NfcTap } from './hooks/useNfc'
+import { useNfc, type NfcTap } from '../hooks/useNfc'
 
 // Week 1 chip check (PRD §6.3): tap real student IDs and confirm
 // 1) Chrome on this phone can read them, 2) the UID is stable across taps.
-export default function App() {
+export default function ChipCheck() {
   const [history, setHistory] = useState<NfcTap[]>([])
   const { isSupported, scanning, lastTap, error, startScan, stopScan } = useNfc((tap) =>
     setHistory((h) => [tap, ...h].slice(0, 50)),
