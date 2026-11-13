@@ -22,10 +22,11 @@ const merchantsPlugin: FastifyPluginAsync = async (app) => {
     },
     async (req, reply) => {
       try {
-        return reply.code(201).send(merchantView(createMerchant(req.body.name, req.body.deviceAddress)));
+        return reply.code(201).send(merchantView(await createMerchant(req.body.name, req.body.deviceAddress)));
       } catch (err) {
         if (err instanceof DuplicateError) return reply.code(409).send({ error: err.message });
-        throw err;
+        req.log.error({ err }, "addMerchant failed");
+        return reply.code(502).send({ error: "CHAIN_UNAVAILABLE" });
       }
     },
   );

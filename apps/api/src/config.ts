@@ -30,8 +30,10 @@ export const config = {
   relayerKey: asKey(required("RELAYER_PRIVATE_KEY")),
   // BSC testnet minimum is 0.1 gwei; sent as a legacy tx so the whole price counts as the tip.
   gasPriceGwei: process.env.GAS_PRICE_GWEI ?? "1",
-  // Optional: only needed for POST /topup (cashier fallback when MetaMask is unavailable).
-  deployerKey: optionalKey("DEPLOYER_PRIVATE_KEY"),
+  // Contract owner: links cards, registers stalls, tops up. Required.
+  deployerKey: asKey(required("DEPLOYER_PRIVATE_KEY")),
+  // Signs the wallet state written to each card. Defaults to the relayer key.
+  cardSignerKey: optionalKey("CARD_SIGNER_PRIVATE_KEY") ?? asKey(required("RELAYER_PRIVATE_KEY")),
   cashierKey: process.env.CASHIER_KEY,
   // Receipts must carry an EIP-712 signature from the stall's registered POS device.
   // Set to "false" only while the POS frontend can't sign yet (re-opens receipt forgery).

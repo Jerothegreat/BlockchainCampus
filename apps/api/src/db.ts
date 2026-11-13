@@ -45,8 +45,13 @@ addColumn("students", "pin_salt", "TEXT"); // hex, PBKDF2 salt (null = legacy sh
 addColumn("students", "pin_iter", "INTEGER");
 addColumn("merchants", "device_address", "TEXT"); // POS phone's signing key address
 addColumn("receipts", "sig", "TEXT"); // EIP-712 signature from the stall's POS device
+addColumn("students", "card_nonce", "INTEGER NOT NULL DEFAULT 0"); // nonce of the latest card state issued
+addColumn("students", "blocked", "INTEGER NOT NULL DEFAULT 0"); // 1 = cloned/rolled-back card detected
+addColumn("receipts", "card_id", "TEXT"); // 0x + uidHash
+addColumn("receipts", "card_nonce", "INTEGER"); // card state nonce the POS saw (null = seed/legacy)
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS merchants_device ON merchants(device_address);
   CREATE INDEX IF NOT EXISTS receipts_from ON receipts(from_addr, created_at);
+  CREATE INDEX IF NOT EXISTS receipts_card ON receipts(card_id, card_nonce);
 `);

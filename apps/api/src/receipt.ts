@@ -1,40 +1,55 @@
 import { verifyTypedData, type Address, type Hex } from "viem";
 import { config } from "./config.js";
 
-/**
- * Receipts are signed by the stall's POS phone (EIP-712) so nobody can forge a payment just
- * by knowing a student's and a stall's addresses. The student's phone forwards the same
- * signature from the QR. Client side (viem):
- *   privateKeyToAccount(deviceKey).signTypedData({ domain, types: receiptTypes, primaryType: "Receipt", message })
- * with domain/types exactly as below and message = { id, from, to, amount: BigInt(centavos), createdAt: BigInt(ms) }.
- */
-export const receiptDomain = {
+/** EIP-712 domain shared by receipts (signed by POS devices) and card states (signed by the backend). */
+export const domain = {
   name: "UMak Pay",
   version: "1",
   chainId: config.chainId,
   verifyingContract: config.contract,
 } as const;
 
+/**
+ * A card payment, signed by the stall's POS device when the card is tapped (offline OK).
+ * `cardNonce` is the nonce of the card state the POS read; two receipts on the same card
+ * and nonce mean the card was rolled back (double spend).
+ */
 export const receiptTypes = {
   Receipt: [
     { name: "id", type: "string" },
-    { name: "from", type: "address" },
+    { name: "cardId", type: "bytes32" },
     { name: "to", type: "address" },
     { name: "amount", type: "uint256" },
     { name: "createdAt", type: "uint64" },
+    { name: "cardNonce", type: "uint32" },
   ],
 } as const;
 
-export type SignedReceipt = { id: string; from: Address; to: Address; amount: number; createdAt: number; sig: Hex };
+export type SignedReceipt = {
+  id: string;
+  cardId: Hex;
+  to: Address;
+  amount: number;
+  createdAt: number;
+  cardNonce: number;
+  sig: Hex;
+};
 
 export async function verifyReceipt(r: SignedReceipt, device: Address): Promise<boolean> {
   try {
     return await verifyTypedData({
       address: device,
-      domain: receiptDomain,
+      domain,
       types: receiptTypes,
       primaryType: "Receipt",
-      message: { id: r.id, from: r.from, to: r.to, amount: BigInt(r.amount), createdAt: BigInt(r.createdAt) },
+      message: {
+        id: r.id,
+        cardId: r.cardId,
+        to: r.to,
+        amount: BigInt(r.amount),
+        createdAt: BigInt(r.createdAt),
+        cardNonce: r.cardNonce,
+      },
       signature: r.sig,
     });
   } catch {

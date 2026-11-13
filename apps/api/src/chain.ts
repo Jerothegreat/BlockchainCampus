@@ -17,11 +17,15 @@ import { config } from "./config.js";
 const chain = config.chainId === anvil.id ? anvil : bscTestnet;
 const transport = http(config.rpcUrl);
 
+// TagakPesoV2 (~/umak-contracts/src/TagakPesoV2.sol): one wallet per card, closed-loop tPHP.
 export const abi = parseAbi([
   "function balanceOf(address) view returns (uint256)",
-  "function topUp(address to, uint256 amount, string orNumber)",
-  "function settleBatch((bytes32 id, address from, address to, uint256 amount)[] ps)",
-  "event PaymentSettled(bytes32 indexed id, address from, address to, uint256 amount)",
+  "function walletOf(bytes32 cardId) view returns (address)",
+  "function linkCard(bytes32 cardId, address wallet)",
+  "function addMerchant(address merchant)",
+  "function topUp(bytes32 cardId, uint256 amount, string ref)",
+  "function settleBatch((bytes32 id, bytes32 cardId, address to, uint256 amount)[] ps)",
+  "event PaymentSettled(bytes32 indexed id, bytes32 indexed cardId, address to, uint256 amount)",
   "event PaymentFailed(bytes32 indexed id, string reason)",
 ]);
 
@@ -31,9 +35,7 @@ const txFees = { type: "legacy", gasPrice: parseGwei(config.gasPriceGwei) } as c
 
 export const publicClient = createPublicClient({ chain, transport });
 const relayer = createWalletClient({ chain, transport, account: privateKeyToAccount(config.relayerKey) });
-const deployer = config.deployerKey
-  ? createWalletClient({ chain, transport, account: privateKeyToAccount(config.deployerKey) })
-  : undefined;
+const deployer = createWalletClient({ chain, transport, account: privateKeyToAccount(config.deployerKey) });
 
 export const explorerTx = (hash: Hex) =>
   chain.blockExplorers?.default ? `${chain.blockExplorers.default.url}/tx/${hash}` : undefined;
@@ -57,27 +59,26 @@ export async function balanceOf(address: Address): Promise<bigint> {
   return publicClient.readContract({ address: config.contract, abi, functionName: "balanceOf", args: [address] });
 }
 
-export const canTopUp = () => deployer !== undefined;
-export const signers = { relayer: relayer.account.address, deployer: deployer?.account.address };
+export const signers = { relayer: relayer.account.address, deployer: deployer.account.address };
 
-/** Cashier received cash → mint the same amount of tPHP, tagged with the official-receipt number. */
-export function topUp(to: Address, amount: bigint, orNumber: string): Promise<Hex> {
-  if (!deployer) throw new Error("DEPLOYER_PRIVATE_KEY not configured");
+/** Owner-only contract writes (Deployer key), one at a time, waiting for confirmation. */
+function ownerWrite(functionName: "linkCard" | "addMerchant" | "topUp", args: readonly unknown[]): Promise<Hex> {
   return deployerQueue(async () => {
-    const hash = await deployer.writeContract({
-      address: config.contract,
-      abi,
-      functionName: "topUp",
-      args: [to, amount, orNumber],
-      ...txFees,
-    });
+    // viem can't narrow args from a runtime function name; the ABI above is the source of truth.
+    const hash = await deployer.writeContract({ address: config.contract, abi, functionName, args, ...txFees } as never);
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    if (receipt.status !== "success") throw new Error(`topUp reverted: ${hash}`);
+    if (receipt.status !== "success") throw new Error(`${functionName} reverted: ${hash}`);
     return hash;
   });
 }
 
-export type Payment = { id: string; from: Address; to: Address; amount: bigint };
+/** Binds a card (cardId = uidHash) to its wallet on-chain. One-time, immutable. */
+export const linkCard = (cardId: Hex, wallet: Address) => ownerWrite("linkCard", [cardId, wallet]);
+export const addMerchant = (merchant: Address) => ownerWrite("addMerchant", [merchant]);
+/** Money received for this card → mint the same amount of tPHP to its wallet. `ref` = OR number or payment ref. */
+export const topUp = (cardId: Hex, amount: bigint, ref: string) => ownerWrite("topUp", [cardId, amount, ref]);
+
+export type Payment = { id: string; cardId: Hex; to: Address; amount: bigint };
 export type Outcome =
   | { status: "settled"; txHash: Hex }
   | { status: "failed"; txHash: Hex; reason: string }
@@ -91,7 +92,7 @@ export function settle(payments: Payment[]): Promise<Map<string, Outcome>> {
       address: config.contract,
       abi,
       functionName: "settleBatch",
-      args: [payments.map((p) => ({ id: toChainId(p.id), from: p.from, to: p.to, amount: p.amount }))],
+      args: [payments.map((p) => ({ id: toChainId(p.id), cardId: p.cardId, to: p.to, amount: p.amount }))],
       ...txFees,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });

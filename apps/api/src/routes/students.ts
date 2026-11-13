@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getAddress, type Address } from "viem";
 import { requireCashier, requireDevice } from "../auth.js";
+import { cardSignerAddress } from "../cardstate.js";
 import { balanceOf, explorerTx } from "../chain.js";
 import { db } from "../db.js";
 import {
@@ -63,10 +64,12 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       if (normalizeUid(req.body.uid).length < 4) return reply.code(400).send({ error: "INVALID_UID" });
       try {
-        return reply.code(201).send(createStudent(req.body));
+        // Response includes `card`: the initial wallet record the cashier phone writes to the card.
+        return reply.code(201).send(await createStudent(req.body));
       } catch (err) {
         if (err instanceof DuplicateError) return reply.code(409).send({ error: err.message });
-        throw err;
+        req.log.error({ err }, "link failed");
+        return reply.code(502).send({ error: "CHAIN_UNAVAILABLE" });
       }
     },
   );
@@ -142,6 +145,7 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
     }
     return {
       syncedAt: Date.now(),
+      cardSigner: cardSignerAddress, // verify card records offline against this address
       students: rows.map((r, i) => ({
         uidHash: r.uid_hash,
         studentNo: r.student_no,
@@ -152,6 +156,8 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
         pinIter: r.pin_iter,
         balance: Number(balances[i]),
         offlineCap: Math.min(r.offline_cap, Number(balances[i])),
+        cardNonce: r.card_nonce, // latest issued state; a card showing less is a stale copy
+        blocked: r.blocked === 1, // cloned / rolled-back card: refuse
       })),
       merchants: listMerchants().map(merchantView),
     };

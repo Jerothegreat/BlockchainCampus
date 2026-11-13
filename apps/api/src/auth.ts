@@ -4,7 +4,7 @@ import { getAddress, isAddress, verifyMessage, type Hex } from "viem";
 import { config } from "./config.js";
 import { db } from "./db.js";
 
-/** preHandler for cashier-only routes (link, topup, merchants): requires the x-cashier-key header. */
+/** preHandler for cashier-only routes (link, cash top-up, merchants): requires the x-cashier-key header. */
 export async function requireCashier(req: FastifyRequest, reply: FastifyReply) {
   if (!config.cashierKey) return reply.code(503).send({ error: "CASHIER_KEY_NOT_CONFIGURED" });
   const given = Buffer.from(String(req.headers["x-cashier-key"] ?? ""));
