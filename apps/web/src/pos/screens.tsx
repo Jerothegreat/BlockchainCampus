@@ -1,16 +1,21 @@
 // /pos screens, 1:1 with docs/design/board-A/pos-*.html.
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
+import { api, errorText } from '../lib/api'
+import { cardIdOf, encodeCard } from '../lib/card'
+import { cachedChainInfo, NETWORK, txUrl } from '../lib/chain'
 import { db, type QueuedReceipt } from '../lib/db'
+import { signReceipt } from '../lib/device'
 import { clock, useLive } from '../lib/hooks'
-import { PIN_LOCK_MS, PIN_TRIES, checkPayment, pesos, pinHash, type CheckResult } from '../lib/pay'
-import { encodeReceipt } from '../lib/qr'
+import { PIN_LOCK_MS, PIN_TRIES, capOf, checkAmount, pesos, type CheckResult } from '../lib/pay'
+import { pinMatches } from '../lib/pin'
 import {
   AppColumn, Avatar, Banner, Button, Card, Chip, Dialog, EmptyState, Icon, Keypad, List, ListItem, NavBar, NetChip,
-  SampleTag, StatusChip, TopBar, type NavItem,
+  SampleTag, StatusChip, TextField, TopBar, type NavItem,
 } from '../ui'
+import { DemoCards } from '../ui/DemoCards'
 import { ReceiptSlip } from '../ui/ReceiptSlip'
-import { usePos } from './state'
+import { usePos, type TapProblem } from './state'
 
 const NAV: NavItem[] = [
   { to: '/pos', icon: 'point_of_sale', label: 'Charge' },
@@ -33,6 +38,45 @@ const firstName = (name: string) => {
   return last ? `${first} ${last[0]}.` : first
 }
 
+/* ---------- Setup (first run: register this phone as a stall) ---------- */
+
+function PosSetup() {
+  const pos = usePos()
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const submit = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await pos.registerStall(name.trim())
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <AppColumn>
+      <TopBar title="Set up this stall" back="/app" actions={<NetChip online={pos.online} />} />
+      <div className="flex flex-1 flex-col gap-5 px-4 py-6">
+        <p className="text-body-l text-on-surface-variant">
+          This phone becomes the stall's register. It makes its own signing key, so receipts it prints can't be faked.
+        </p>
+        <TextField id="stall-name" label="Stall name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Kuya's Grill" />
+        <p className="font-mono text-body-s text-on-surface-variant break-all">Device {pos.device ?? '…'}</p>
+        {error && <Banner tone="error" icon="error" title="Could not register">{error}</Banner>}
+        {!pos.online && <Banner tone="warning" icon="cloud_off" title="Needs signal once">Connect to register; after that, charging works offline.</Banner>}
+        <div className="mt-auto mb-4">
+          <Button size="l" full icon="storefront" disabled={busy || !pos.online || name.trim().length === 0} onClick={() => void submit()}>
+            {busy ? 'Registering on-chain…' : 'Register stall'}
+          </Button>
+        </div>
+      </div>
+    </AppColumn>
+  )
+}
+
 /* ---------- Charge (keypad) ---------- */
 
 export function PosKeypad() {
@@ -49,17 +93,18 @@ export function PosKeypad() {
     setAmount(a.slice(0, 5))
   }
 
+  if (pos.device && !pos.merchant) return <PosSetup />
+
   return (
     <AppColumn rail>
       <TopBar title={pos.merchant?.name ?? 'Stall'} back="/app" actions={<NetChip online={pos.online} />} />
       <div className="flex flex-1 flex-col gap-4 px-4 py-3">
         <div className="flex items-center justify-between text-body-s text-on-surface-variant">
           <span>{synced ? `Synced ${clock(pos.syncedAt!)}, ${pos.queueCount} in queue` : 'Not synced yet'}</span>
-          <SampleTag />
         </div>
         {!synced && (
           <Banner tone="warning" icon="sync_problem" title="Student list not synced">
-            Connect once to sync. Charging is off until then.
+            {pos.syncError ?? 'Connect once to sync. Charging is off until then.'}
           </Banner>
         )}
         <div className="py-2 text-center">
@@ -79,6 +124,7 @@ export function PosKeypad() {
               {q.label} {q.pesos}
             </Chip>
           ))}
+          <SampleTag />
         </div>
         <Keypad mode="amount" onKey={key} />
         <div className="pb-4">
@@ -97,9 +143,9 @@ export function PosKeypad() {
 export function PosTap() {
   const pos = usePos()
   const navigate = useNavigate()
-  const unlinked = pos.tapped && !pos.tapped.student
   const cancel = () => {
-    pos.nfc.stopScan()
+    pos.card.stop()
+    pos.clearTapProblem()
     navigate('/pos')
   }
   return (
@@ -114,36 +160,57 @@ export function PosTap() {
           <p className="font-display text-headline-s font-semibold">Student, tap your ID</p>
           <p className="max-w-[30ch] text-body-l text-on-surface-variant">Hold the ID flat on the back of this phone.</p>
         </div>
-        {!pos.nfc.isSupported && (
+        {!pos.card.nfc.isSupported && (
           <Banner tone="warning" icon="nfc" title="NFC is off">
             Turn on NFC in Android settings and open this page in Chrome.
           </Banner>
         )}
-        {pos.nfc.error && pos.nfc.isSupported && <p className="text-center text-body-m text-error">{pos.nfc.error}</p>}
+        {pos.card.nfc.error && pos.card.nfc.isSupported && <p className="text-center text-body-m text-error">{pos.card.nfc.error}</p>}
         <div className="mt-auto mb-4 space-y-2">
-          <Button size="l" variant="tonal" full onClick={() => void pos.demoTap()}>
-            Demo: ID tapped
-          </Button>
+          <DemoCards onTap={(uid) => void pos.card.tapVirtual(uid)} />
           <Button variant="text" full onClick={cancel}>
             Cancel
           </Button>
         </div>
       </div>
-      {unlinked && (
-        <Dialog icon="badge" title="This ID is not linked yet" actions={<Button variant="text" onClick={cancel}>OK</Button>}>
-          Send the student to the cashier to link it.
-        </Dialog>
-      )}
+      {pos.tapProblem && <TapDialog problem={pos.tapProblem} onClose={pos.clearTapProblem} onCancel={cancel} />}
     </AppColumn>
   )
+}
+
+function TapDialog({ problem, onClose, onCancel }: { problem: TapProblem; onClose: () => void; onCancel: () => void }) {
+  const ok = (label = 'OK') => <Button variant="text" onClick={onCancel}>{label}</Button>
+  const again = <Button variant="text" onClick={onClose}>Tap again</Button>
+  switch (problem.reason) {
+    case 'blank':
+      return <Dialog icon="badge" title="No wallet on this ID" actions={<>{ok('Cancel')}{again}</>}>This ID has not been registered. The student registers it in the app, or at the cashier.</Dialog>
+    case 'unlinked':
+      return <Dialog icon="badge" title="This ID is not linked" actions={<>{ok('Cancel')}{again}</>}>Its wallet is not in this stall's student list. Connect to sync, or send the student to the cashier.</Dialog>
+    case 'unreadable':
+      return <Dialog icon="error" title="Could not read the wallet" actions={<>{ok('Cancel')}{again}</>}>Hold the ID still until the phone buzzes, then try again.</Dialog>
+    case 'forged':
+      return <Dialog icon="shield" title="Wallet record is not genuine" actions={ok()}>The balance on this ID was not signed by UMak Pay. Do not accept it.</Dialog>
+    case 'pending':
+      return <Dialog icon="schedule" title="A payment is still pending" actions={ok()}>This ID paid somewhere and hasn't settled yet. The student taps it on a phone with signal first, then pays again.</Dialog>
+    case 'stale':
+      return <Dialog icon="sync_problem" title="Old copy of the wallet" actions={ok()}>This ID holds an outdated balance. The student taps it on a phone with signal to refresh it.</Dialog>
+    case 'blocked':
+      return <Dialog icon="cancel" title="This ID is blocked" actions={ok()}>A copied or rolled-back card was detected. Pay at the cashier.</Dialog>
+    case 'no-sync':
+      return <Dialog icon="sync_problem" title="Sync this phone first" actions={ok()}>Connect once so this phone can check wallet signatures offline.</Dialog>
+    default:
+      return <Dialog icon="error" title="Card refused" actions={ok()}>{problem.reason}</Dialog>
+  }
 }
 
 /* ---------- Confirm ---------- */
 
 export function PosConfirm() {
   const pos = usePos()
-  const s = pos.tapped?.student
-  if (!s || !pos.tapped) return <Navigate to="/pos" replace />
+  const t = pos.tapped
+  if (!t) return <Navigate to="/pos" replace />
+  const s = t.student
+  const cap = capOf(s)
   return (
     <AppColumn>
       <TopBar title="Confirm payment" back="/pos/tap" actions={<NetChip online={pos.online} />} />
@@ -151,11 +218,15 @@ export function PosConfirm() {
         <Card>
           <div className="flex items-center gap-4">
             <Avatar icon="person" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-title-l font-semibold">{firstName(s.name)}</p>
               <p className="font-mono text-body-m text-on-surface-variant">
-                {shortNo(s.studentNo)}, ID {shortUid(pos.tapped.uid)}
+                {shortNo(s.studentNo)}, ID {shortUid(t.tap.uid)}
               </p>
+            </div>
+            <div className="text-right">
+              <p className="text-label-m text-on-surface-variant">On card</p>
+              <p className="text-title-m font-semibold tabular-nums">{pesos(t.record.state.balance)}</p>
             </div>
           </div>
         </Card>
@@ -163,9 +234,11 @@ export function PosConfirm() {
           <p className="text-body-l text-on-surface-variant">Pay to {pos.merchant?.name}</p>
           <p className="font-display text-display-m font-bold tabular-nums">{pesos(centavos(pos.amount))}</p>
         </div>
-        <p className="text-center text-body-m text-on-surface-variant">
-          Offline limit for this ID: <span className="font-semibold text-on-surface tabular-nums">{pesos(s.offlineCap)}</span>
-        </p>
+        {Number.isFinite(cap) && (
+          <p className="text-center text-body-m text-on-surface-variant">
+            Offline limit for this ID: <span className="font-semibold text-on-surface tabular-nums">{pesos(cap)}</span>
+          </p>
+        )}
         <div className="mt-auto mb-4 grid grid-cols-2 gap-3">
           <Button size="l" variant="outlined" full to="/pos">Cancel</Button>
           <Button size="l" full to="/pos/pin">Confirm</Button>
@@ -178,68 +251,104 @@ export function PosConfirm() {
 
 /* ---------- PIN (errors open as dialogs over this screen) ---------- */
 
-type Problem = Exclude<CheckResult, { ok: true }> | { ok: false; reason: 'wrong-pin'; left: number } | { ok: false; reason: 'locked' }
+type Problem =
+  | Exclude<CheckResult, { ok: true }>
+  | { ok: false; reason: 'wrong-pin'; left: number }
+  | { ok: false; reason: 'locked' }
+  | { ok: false; reason: 'write'; message: string }
+
+type Phase = 'pin' | 'writing' | 'settling' | 'clearing'
 
 export function PosPin() {
   const pos = usePos()
   const navigate = useNavigate()
   const [pin, setPin] = useState('')
+  const [phase, setPhase] = useState<Phase>('pin')
   const [problem, setProblem] = useState<Problem | null>(null)
   const t = pos.tapped
-  const s = t?.student
   const amount = centavos(pos.amount)
 
   const submit = async (entered: string) => {
-    if (!t || !s || !pos.merchant) return
-    const lock = await db.locks.get(t.uidHash)
+    if (!t || !pos.merchant) return
+    const { tap, record, student: s } = t
+    const lock = await db.locks.get(tap.uidHash)
     if (lock && lock.until > Date.now()) return setProblem({ ok: false, reason: 'locked' })
 
-    if ((await pinHash(entered, t.uid)) !== s.pinHash) {
+    if (!(await pinMatches(entered, tap.uid, s))) {
       const tries = (lock && lock.until === 0 ? lock.tries : 0) + 1
       const locked = tries >= PIN_TRIES
-      await db.locks.put({ uidHash: t.uidHash, tries: locked ? 0 : tries, until: locked ? Date.now() + PIN_LOCK_MS : 0 })
+      await db.locks.put({ uidHash: tap.uidHash, tries: locked ? 0 : tries, until: locked ? Date.now() + PIN_LOCK_MS : 0 })
       setPin('')
       return setProblem(locked ? { ok: false, reason: 'locked' } : { ok: false, reason: 'wrong-pin', left: PIN_TRIES - tries })
     }
-    await db.locks.delete(t.uidHash)
+    await db.locks.delete(tap.uidHash)
 
-    const pendingRows = await db.posQueue.where('uidHash').equals(t.uidHash).filter((r) => r.status === 'pending').toArray()
-    const pending = pendingRows.reduce((sum, r) => sum + r.amount, 0)
-    const check = checkPayment({ amount, student: s, pending })
+    const check = checkAmount({ amount, record, student: s })
     if (!check.ok) {
       setPin('')
       return setProblem(check)
     }
 
-    const receipt: QueuedReceipt = {
+    // Sign the receipt with this stall's device key, offline.
+    const chain = await cachedChainInfo()
+    if (!chain) return setProblem({ ok: false, reason: 'write', message: 'Sync this phone once first.' })
+    const receipt = await signReceipt(chain, {
       id: crypto.randomUUID(),
-      from: s.address,
+      cardId: cardIdOf(tap.uidHash),
       to: pos.merchant.address,
       amount,
       createdAt: Date.now(),
-      uidHash: t.uidHash,
-      merchantId: pos.merchant.id,
-      ...(pos.item ? { item: pos.item } : {}),
+      cardNonce: record.state.nonce,
+    })
+
+    // Write PENDING onto the card first: the sale only counts once the card carries it.
+    const pendingCard = encodeCard({ state: record.state, pending: { id: receipt.id, to: receipt.to, amount, createdAt: receipt.createdAt, sig: receipt.sig } })
+    setPhase('writing')
+    try {
+      await pos.card.write(tap, pendingCard)
+    } catch (e) {
+      setPhase('pin')
+      setPin('')
+      return setProblem({ ok: false, reason: 'write', message: e instanceof Error ? e.message : String(e) })
+    }
+    const queued: QueuedReceipt = {
+      ...receipt,
+      uidHash: tap.uidHash,
       studentName: firstName(s.name),
       merchantName: pos.merchant.name,
+      ...(pos.item ? { item: pos.item } : {}),
       status: 'pending',
+      reason: null,
       txHash: null,
-      blockNumber: null,
-      failReason: null,
+      explorer: null,
     }
-    await db.posQueue.put(receipt)
+    await db.posQueue.put(queued)
+
+    // Online right now: settle it and hand the card back clear (API.md step 7). Best effort; the
+    // receipt stays queued and the student's phone can settle it later.
+    if (navigator.onLine) {
+      try {
+        setPhase('settling')
+        const res = await api.refresh({ uid: tap.uid, card: pendingCard })
+        const mine = res.settled.find((r) => r.id === receipt.id)
+        if (mine) await db.posQueue.update(receipt.id, { status: mine.status, reason: mine.reason ?? null, txHash: mine.txHash ?? null, explorer: mine.explorer ?? null })
+        setPhase('clearing')
+        await pos.card.write(tap, res.card)
+      } catch {
+        // stays pending
+      }
+    }
     navigate(`/pos/approved/${receipt.id}`)
-    if (pos.online) void pos.push()
   }
 
   const key = (k: string) => {
-    if (problem) return
-    const next = k === 'backspace' ? pin.slice(0, -1) : (pin + k).slice(0, 4)
+    if (problem || phase !== 'pin') return
+    const next = k === 'backspace' ? pin.slice(0, -1) : (pin + k).slice(0, 6)
     setPin(next)
     if (next.length === 4) setTimeout(() => void submit(next), 150)
   }
 
-  if (!t || !s) return <Navigate to="/pos" replace />
+  if (!t) return <Navigate to="/pos" replace />
   const close = () => setProblem(null)
   const cancel = () => navigate('/pos')
 
@@ -248,7 +357,7 @@ export function PosPin() {
       <TopBar title="Enter your PIN" back="/pos/confirm" actions={<NetChip online={pos.online} />} />
       <div className="flex flex-1 flex-col gap-4 px-4 py-5">
         <p className="text-center text-body-l text-on-surface-variant">
-          {firstName(s.name)}, <span className="font-semibold text-on-surface tabular-nums">{pesos(amount)}</span> to {pos.merchant?.name}
+          {firstName(t.student.name)}, <span className="font-semibold text-on-surface tabular-nums">{pesos(amount)}</span> to {pos.merchant?.name}
         </p>
         <div className="flex justify-center gap-5 py-2" aria-live="polite" aria-label={`${pin.length} of 4 digits`}>
           {[0, 1, 2, 3].map((i) => (
@@ -257,8 +366,22 @@ export function PosPin() {
         </div>
         <Keypad mode="pin" onKey={key} />
       </div>
+      {phase !== 'pin' && <HoldDialog phase={phase} virtual={t.tap.virtual} />}
       {problem && <PinDialog problem={problem} onClose={close} onCancel={cancel} />}
     </AppColumn>
+  )
+}
+
+function HoldDialog({ phase, virtual }: { phase: Exclude<Phase, 'pin'>; virtual: boolean }) {
+  const text = {
+    writing: virtual ? 'Saving the payment to the demo ID…' : 'Keep the ID on the phone. Saving the payment to the card…',
+    settling: `Online: settling on ${NETWORK}…`,
+    clearing: virtual ? 'Updating the demo ID…' : 'Keep the ID on the phone. Writing the new balance…',
+  }[phase]
+  return (
+    <Dialog icon="contactless" title={phase === 'settling' ? 'Settling' : 'Hold the ID'} actions={<span />}>
+      {text}
+    </Dialog>
   )
 }
 
@@ -276,28 +399,34 @@ function PinDialog({ problem, onClose, onCancel }: { problem: Problem; onClose: 
     case 'locked':
       return (
         <Dialog icon="lock" title="This ID is locked" actions={btn('OK', onCancel)}>
-          Too many wrong PINs. Try again in {PIN_LOCK_MS / 60_000} minutes, or pay online.
+          Too many wrong PINs. Try again in {PIN_LOCK_MS / 60_000} minutes.
         </Dialog>
       )
     case 'over-cap':
       return (
         <Dialog icon="speed" title="Over the offline limit" actions={<>{btn('Cancel', onCancel)}{btn('Change amount', changeAmount)}</>}>
-          This ID can spend up to {pesos(problem.limit)} with no signal. Charge {pesos(problem.limit)} or less, or connect to check the full balance.
+          This ID can spend up to {pesos(problem.limit)} with no signal. Charge {pesos(problem.limit)} or less.
         </Dialog>
       )
     case 'insufficient':
       return (
         <Dialog icon="account_balance_wallet" title="Not enough balance" actions={<>{btn('Cancel', onCancel)}{btn('Change amount', changeAmount)}</>}>
-          Balance after pending payments: {pesos(problem.available)}.
+          Balance on this ID: {pesos(problem.available)}. The student can top up in the app.
         </Dialog>
       )
-    case 'flagged':
+    case 'write':
+      return (
+        <Dialog icon="contactless" title="Payment not saved" actions={<>{btn('Cancel', onCancel)}{btn('Try again', onClose)}</>}>
+          The card was moved before the payment was written ({problem.message}). Nothing was charged. Enter the PIN again and keep the ID on the phone.
+        </Dialog>
+      )
+    case 'blocked':
       return (
         <Dialog icon="flag" title="Offline payments paused for this ID" actions={btn('OK', onCancel)}>
-          This ID was used at two stalls minutes apart. Pay online or see the cashier.
+          Pay at the cashier.
         </Dialog>
       )
-    case 'invalid':
+    default:
       return (
         <Dialog icon="speed" title="Enter an amount" actions={btn('OK', changeAmount)}>
           The amount must be more than ₱0.00.
@@ -339,19 +468,26 @@ export function PosApproved() {
           ]}
           total={r.amount}
           id={r.id}
-          qr={encodeReceipt(r)}
+          stamp={r.status === 'settled' ? { kind: 'settled', block: null } : r.status === 'pending' ? { kind: 'pending' } : undefined}
         />
-        <p className="text-center text-title-m font-semibold">Student, scan this receipt</p>
         <p className="text-center text-body-m text-on-surface-variant">
-          {r.status === 'settled' ? 'Settled on Polygon Amoy.' : 'Pending. Settles when either phone gets signal. No phone? This stall settles the receipt.'}
+          {r.status === 'settled' ? (
+            <>
+              Settled on {NETWORK}.{' '}
+              {r.txHash && <a className="font-semibold text-primary underline" href={txUrl(r.txHash)} target="_blank" rel="noreferrer">View transaction</a>}
+            </>
+          ) : r.status === 'pending' ? (
+            'Saved on the ID and in this phone’s queue. It settles when either phone gets signal.'
+          ) : (
+            `Refused at settlement: ${r.reason ?? r.status}.`
+          )}
         </p>
         <div className="mt-auto space-y-3 pb-4">
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-container-highest" role="progressbar" aria-label="Time left">
             <div className="countdown h-full bg-primary" />
           </div>
-          <p className="text-center text-body-s text-on-surface-variant">Back to the keypad after the scan, or in 20 s.</p>
+          <p className="text-center text-body-s text-on-surface-variant">Back to the keypad in 20 s.</p>
           <Button size="l" full onClick={next}>Next sale</Button>
-          <Button variant="text" full icon="smartphone" to="/me/scan">Switch to the student phone</Button>
         </div>
       </div>
     </AppColumn>
@@ -367,7 +503,7 @@ export function PosToday() {
   const pos = usePos()
   const start = new Date().setHours(0, 0, 0, 0)
   const rows = useLive(() => db.posQueue.where('createdAt').aboveOrEqual(start).reverse().sortBy('createdAt'), [start], [] as QueuedReceipt[])
-  const total = rows.filter((r) => r.status !== 'failed').reduce((s, r) => s + r.amount, 0)
+  const total = rows.filter((r) => r.status === 'pending' || r.status === 'settled').reduce((s, r) => s + r.amount, 0)
 
   // Busy-hours forecast: real counts by hour once there is enough history, sample bars until then.
   const all = useLive(() => db.posQueue.toArray(), [], [] as QueuedReceipt[])

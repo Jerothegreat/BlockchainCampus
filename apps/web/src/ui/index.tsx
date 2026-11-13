@@ -82,11 +82,12 @@ export function Chip({ selected, children, onClick, icon }: { selected?: boolean
   )
 }
 
-export type Status = 'pending' | 'settled' | 'failed' | 'flagged'
+export type Status = 'pending' | 'settled' | 'failed' | 'rejected' | 'flagged'
 const STATUS: Record<Status, { cls: string; icon: string; word: string }> = {
   pending: { cls: 'bg-tertiary-container text-on-tertiary-container', icon: 'schedule', word: 'Pending' },
   settled: { cls: 'bg-success-container text-on-success-container', icon: 'check_circle', word: 'Settled' },
   failed: { cls: 'bg-error-container text-on-error-container', icon: 'cancel', word: 'Failed' },
+  rejected: { cls: 'bg-error-container text-on-error-container', icon: 'cancel', word: 'Rejected' },
   flagged: { cls: 'bg-error-container text-on-error-container', icon: 'flag', word: 'Flagged' },
 }
 

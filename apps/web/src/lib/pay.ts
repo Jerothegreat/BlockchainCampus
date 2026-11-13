@@ -1,37 +1,35 @@
-// Offline acceptance rules for the stall POS (PRD "Merchant POS", PRODUCT.md constraints).
-// All amounts are centavos.
+// Offline acceptance rules for the stall POS (API.md "POS: offline payment"). All amounts are centavos.
+import type { SyncStudent } from './api'
+import type { CardRecord } from './card'
 
 export type CheckResult =
   | { ok: true }
-  | { ok: false; reason: 'flagged' }
+  | { ok: false; reason: 'invalid' | 'blocked' | 'pending' | 'stale' }
   | { ok: false; reason: 'over-cap'; limit: number }
   | { ok: false; reason: 'insufficient'; available: number }
-  | { ok: false; reason: 'invalid' }
 
-export function checkPayment({
-  amount,
-  student,
-  pending,
-}: {
-  amount: number
-  student: { balance: number; offlineCap: number }
-  pending: number
-}): CheckResult {
-  if (!Number.isInteger(amount) || amount <= 0) return { ok: false, reason: 'invalid' }
-  if (student.offlineCap <= 0) return { ok: false, reason: 'flagged' }
-  if (amount > student.offlineCap) return { ok: false, reason: 'over-cap', limit: student.offlineCap }
-  const available = student.balance - pending
-  if (amount > available) return { ok: false, reason: 'insufficient', available: Math.max(0, available) }
+/**
+ * The /sync snapshot sends offlineCap = min(cap, balance at sync time). When it equals that balance the
+ * real cap is at least the balance, so a top-up after the sync must not be blocked by it.
+ */
+export const capOf = (s: Pick<SyncStudent, 'offlineCap' | 'balance'>) => (s.offlineCap < s.balance ? s.offlineCap : Infinity)
+
+/** Card checks that need no PIN: refuse before asking for it. */
+export function checkCard({ record, student, queuedOnThisNonce }: { record: CardRecord; student: SyncStudent; queuedOnThisNonce: boolean }): CheckResult {
+  if (student.blocked) return { ok: false, reason: 'blocked' }
+  if (record.pending || queuedOnThisNonce) return { ok: false, reason: 'pending' }
+  if (record.state.nonce < student.cardNonce) return { ok: false, reason: 'stale' }
   return { ok: true }
 }
 
-async function sha256Hex(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+export function checkAmount({ amount, record, student }: { amount: number; record: CardRecord; student: SyncStudent }): CheckResult {
+  if (!Number.isInteger(amount) || amount <= 0) return { ok: false, reason: 'invalid' }
+  const limit = capOf(student)
+  if (limit <= 0) return { ok: false, reason: 'blocked' }
+  if (amount > limit) return { ok: false, reason: 'over-cap', limit }
+  if (amount > record.state.balance) return { ok: false, reason: 'insufficient', available: record.state.balance }
+  return { ok: true }
 }
-
-/** sha256(pin + uid), uid normalized (lib/uid.ts). Must match the API's /link. */
-export const pinHash = (pin: string, uid: string) => sha256Hex(pin + uid)
 
 const fmt = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 export const pesos = (centavos: number) => '₱' + fmt.format(centavos / 100)
