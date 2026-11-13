@@ -11,6 +11,7 @@ import { deviceAccount } from '../lib/device'
 import { useLive, useOnline } from '../lib/hooks'
 import { checkCard, type CheckResult } from '../lib/pay'
 import { pushQueue } from '../lib/settle'
+import { prepareSaleSound } from '../lib/saleSound'
 import { useCard, type CardTap } from '../hooks/useCard'
 
 export type Tapped = { tap: CardTap; record: CardRecord; student: SyncStudent }
@@ -158,6 +159,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
       clearTapProblem: () => setTapProblem(null),
       card,
       charge: () => {
+        prepareSaleSound()
         setTapped(null)
         setTapProblem(null)
         if (card.nfc.isSupported) void card.start()

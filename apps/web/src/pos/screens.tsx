@@ -9,6 +9,7 @@ import { signReceipt } from '../lib/device'
 import { clock, useLive } from '../lib/hooks'
 import { PIN_LENGTH, PIN_LOCK_MS, PIN_TRIES, capOf, checkAmount, pesos, type CheckResult } from '../lib/pay'
 import { pinMatches } from '../lib/pin'
+import { playSaleSound, prepareSaleSound } from '../lib/saleSound'
 import {
   AppColumn, Avatar, Banner, Button, Card, Chip, Dialog, EmptyState, Icon, Keypad, List, ListItem, NavBar, NetChip,
   SampleTag, StatusChip, TextField, TopBar, type NavItem,
@@ -338,11 +339,14 @@ export function PosPin() {
         // stays pending
       }
     }
+    const saved = await db.posQueue.get(receipt.id)
+    if (saved) void playSaleSound(saved.status)
     navigate(`/pos/approved/${receipt.id}`)
   }
 
   const key = (k: string) => {
     if (problem || phase !== 'pin') return
+    prepareSaleSound()
     const next = k === 'backspace' ? pin.slice(0, -1) : (pin + k).slice(0, PIN_LENGTH)
     setPin(next)
     if (next.length === PIN_LENGTH) setTimeout(() => void submit(next), 150)
