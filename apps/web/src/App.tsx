@@ -3,16 +3,18 @@ import Cashier from './cashier/Cashier'
 import ChipCheck from './dev/ChipCheck'
 import { MeProvider } from './me/state'
 import { MeActivity, MeHome, MeProfile, MeRefresh, MeTopUp } from './me/screens'
+import { Landing, OpsPanel, RolePicker } from './pages/public'
 import { PosProvider } from './pos/state'
 import { PosApproved, PosConfirm, PosKeypad, PosPin, PosQueue, PosTap, PosToday } from './pos/screens'
-import { Home, RolePicker } from './RolePicker'
 
-// Routes from PRODUCT.md: /, /app, /cashier, /pos, /me. Landing and /ops are not built yet.
+// Routes from PRODUCT.md: /, /app, /cashier, /pos, /me, /ops.
+// /cashier, /pos and /me run on the card-wallet API (apps/api/API.md).
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<Landing />} />
       <Route path="/app" element={<RolePicker />} />
+      <Route path="/ops" element={<OpsPanel />} />
       <Route path="/cashier" element={<Cashier />} />
       <Route
         path="/pos"

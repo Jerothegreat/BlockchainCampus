@@ -49,6 +49,33 @@ export type Sale = { id: string; amount: number; status: ReceiptResult['status']
 export type Withdrawal = { id: string; amount: number; ref: string; status: string; txHash: string | null; explorer?: string }
 export type StallMe = Merchant & { balance: number | null; sales: Sale[]; withdrawals: Withdrawal[] }
 
+// Landing feed and /ops panel (pages/public.tsx). The card-wallet API does not serve /settlements or
+// /ops yet, so these calls fail and those pages show their labelled sample data.
+export type ReceiptStatus = {
+  id: string
+  from: Address
+  to: Address
+  amount: number
+  createdAt: number
+  uidHash: string
+  merchantId: string
+  item?: string
+  status: 'pending' | 'settled' | 'failed'
+  txHash: string | null
+  blockNumber: number | null
+  merchantName: string
+  studentName: string
+  failReason: string | null
+}
+export type Ops = {
+  flags: { uidHash: string; studentName: string; reason: string; at: number; capBefore: number; capAfter: number }[]
+  stalls: { merchantId: string; name: string; online: boolean; queue: number; lastSync: number | null }[]
+  totals: { settled: number; pending: number; failed: number; count: number }
+  receipts: ReceiptStatus[]
+  caps: { studentName: string; uidHash: string; offlineCap: number; capReason: string }[]
+}
+export { EXPLORER_URL, txUrl } from './chain'
+
 // Default: the API on port 3000 of whatever host served the PWA (laptop over USB/LAN in the demo).
 const apiUrl = (): string => import.meta.env.VITE_API_URL ?? `${location.protocol}//${location.hostname}:3000`
 
@@ -108,6 +135,10 @@ export const api = {
   sync: async () => call<Sync>('/sync', { headers: await deviceHeaders() }),
   settle: (receipts: SignedReceipt[]) => call<{ results: ReceiptResult[] }>('/settle', { json: { receipts } }),
   receipt: (id: string) => call<ReceiptResult>(`/receipts/${id}`),
+
+  // Not served by the card-wallet API yet: pages/public.tsx falls back to sample data.
+  settlements: (limit = 10) => call<ReceiptStatus[]>(`/settlements?limit=${limit}`),
+  ops: () => call<Ops>('/ops'),
 }
 
 /** Plain-language text for the API's error codes (API.md "Card endpoint errors"). */
