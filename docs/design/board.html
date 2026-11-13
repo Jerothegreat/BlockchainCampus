@@ -1,0 +1,840 @@
+<title>HeronPay Look Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap">
+<style>
+/* Shell: sticky control bar, screen list left, canvas of real-width iframes right. */
+:root {
+  --s-bg: #F3F4F7; --s-panel: #FFFFFF; --s-line: #D5D9E2; --s-fg: #12161F; --s-muted: #586074;
+  --s-accent: #1F4FD1; --s-accent-ink: #FFFFFF; --s-chip: #E7EAF1; --s-warn: #7A5300;
+  --s-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --s-display: 'Sora', 'Manrope', system-ui, sans-serif;
+  --s-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --s-bg: #0C0F15; --s-panel: #141922; --s-line: #283041; --s-fg: #E8ECF4; --s-muted: #9AA3B6;
+  --s-accent: #8FAEFF; --s-accent-ink: #0C0F15; --s-chip: #1C2230; --s-warn: #F2C230; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --s-bg: #0C0F15; --s-panel: #141922; --s-line: #283041; --s-fg: #E8ECF4; --s-muted: #9AA3B6;
+  --s-accent: #8FAEFF; --s-accent-ink: #0C0F15; --s-chip: #1C2230; --s-warn: #F2C230; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--s-bg); color: var(--s-fg); font: 14px/1.45 var(--s-sans); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--s-panel); }
+::selection { background: var(--s-accent); color: var(--s-accent-ink); }
+button, select { font: inherit; color: inherit; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--s-panel); border-bottom: 1px solid var(--s-line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; }
+.bar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand b { font: 600 15px/1.2 var(--s-display); }
+.brand span { color: var(--s-muted); font-size: 12px; }
+.ctl { display: flex; align-items: center; gap: 6px; }
+.ctl > span { font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--s-muted); }
+.seg { display: inline-flex; background: var(--s-chip); border-radius: 8px; padding: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--s-accent); color: var(--s-accent-ink); font-weight: 700; }
+.seg button:focus-visible, .scr:focus-visible, .fnode:focus-visible, select:focus-visible { outline: 2px solid var(--s-accent); outline-offset: 2px; }
+.layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: calc(100% - 60px); }
+.side { border-right: 1px solid var(--s-line); padding: 6px 10px 40px max(10px, env(safe-area-inset-left, 0px)); background: var(--s-panel); }
+.side h4 { margin: 16px 8px 4px; font: 600 12px/1.3 var(--s-display); color: var(--s-muted); }
+.scr { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.scr:hover { background: var(--s-chip); }
+.scr[aria-current="true"] { background: var(--s-accent); color: var(--s-accent-ink); font-weight: 700; }
+.scr .new { font-size: 10px; font-weight: 700; color: var(--s-warn); margin-left: 6px; }
+.scr[aria-current="true"] .new { color: inherit; }
+.mobile-pick { display: none; }
+.canvas { min-width: 0; padding-block: 18px 60px; padding-left: 20px; padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.note { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--s-muted); font-size: 12.5px; margin-bottom: 14px; max-width: 120ch; }
+.note b { color: var(--s-warn); font-weight: 700; }
+.frames { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.frame { min-width: 0; max-width: 100%; }
+.frame-cap { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 12px; color: var(--s-muted); margin-bottom: 6px; }
+.frame-cap b { color: var(--s-fg); font: 600 13px/1.2 var(--s-display); }
+.frame-scroll { max-width: 100%; overflow-x: auto; }
+.clip { overflow: hidden; border: 1px solid var(--s-line); border-radius: 6px; background: var(--s-panel); }
+.clip iframe { border: 0; display: block; transform-origin: 0 0; }
+.dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.dircard { background: var(--s-panel); border: 1px solid var(--s-line); border-radius: 8px; padding: 12px 14px; }
+.dircard h3 { margin: 0 0 4px; font: 600 15px/1.3 var(--s-display); }
+.dircard p { margin: 0; color: var(--s-muted); font-size: 13px; max-width: 62ch; }
+.dircard p + p { margin-top: 6px; color: var(--s-fg); }
+.flow { display: grid; gap: 14px; }
+.lane { background: var(--s-panel); border: 1px solid var(--s-line); border-radius: 8px; padding: 12px 14px; }
+.lane h3 { margin: 0 0 10px; font: 600 13px/1.3 var(--s-display); color: var(--s-muted); }
+.lane-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.lane-row + .lane-row { margin-top: 8px; }
+.fnode { border: 1px solid var(--s-line); background: var(--s-bg); border-radius: 8px; padding: 8px 12px; cursor: pointer; text-align: left; min-width: 0; }
+.fnode:hover { border-color: var(--s-accent); }
+.fnode small { display: block; color: var(--s-muted); font-size: 11px; font-family: var(--s-mono); }
+.fnode.goal { border-color: var(--s-accent); border-width: 2px; }
+.fnode.entry { border-style: dashed; border-color: var(--s-accent); }
+.edge { color: var(--s-muted); font-size: 11px; display: inline-flex; align-items: center; gap: 4px; }
+.edge svg { width: 16px; height: 16px; flex: none; }
+.tok-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.tok { background: var(--s-panel); border: 1px solid var(--s-line); border-radius: 8px; padding: 14px; min-width: 0; }
+.tok h3 { margin: 0 0 10px; font: 600 14px/1.3 var(--s-display); }
+.sw-wrap { max-height: 520px; overflow: auto; }
+.sw { display: grid; grid-template-columns: 22px 22px minmax(0, 1fr) auto auto; gap: 5px 10px; align-items: center; font-size: 12px; }
+.sw i { width: 22px; height: 16px; border-radius: 4px; border: 1px solid var(--s-line); display: block; }
+.sw code, .kv code { font-family: var(--s-mono); font-size: 11.5px; color: var(--s-muted); }
+.sw .hd { font-size: 11px; font-weight: 600; color: var(--s-muted); }
+.kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 10px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--s-muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.spec-wrap { overflow-x: auto; margin-top: 16px; background: var(--s-panel); border: 1px solid var(--s-line); border-radius: 8px; }
+.spec { border-collapse: collapse; width: 100%; min-width: 900px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.spec th, .spec td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--s-line); vertical-align: top; }
+.spec thead th { font-size: 11px; font-weight: 700; color: var(--s-muted); }
+.spec tbody th { font-weight: 600; white-space: nowrap; }
+.spec td { font-family: var(--s-mono); font-size: 12px; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .mobile-pick { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .mobile-pick select { flex: 1; min-width: 0; padding: 8px; border-radius: 8px; border: 1px solid var(--s-line); background: var(--s-panel); }
+  .canvas { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+</style>
+
+<header class="bar">
+  <div class="bar-row">
+    <div class="brand"><b>HeronPay look board</b><span>direction A, Receipt (picked)</span></div>
+    <div class="ctl"><span>View</span><div class="seg" id="c-view"></div></div>
+    <div class="ctl"><span>Mock theme</span><div class="seg" id="c-theme"></div></div>
+    <div class="ctl"><span>Copy</span><div class="seg" id="c-lang"></div></div>
+    <div class="ctl" id="w-width"><span>Width</span><div class="seg" id="c-width"></div></div>
+    <div class="ctl" id="w-scale"><span>Scale</span><div class="seg" id="c-scale"></div></div>
+  </div>
+</header>
+<div class="layout">
+  <nav class="side" id="side" aria-label="Screens"></nav>
+  <main class="canvas" id="canvas"></main>
+</div>
+
+<script>
+/* ===================== COLOR SCHEMES (M3 roles) ===================== */
+const hx = (h) => { h = h.replace('#', ''); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); };
+const toHex = (a) => '#' + a.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+const mix = (a, b, t) => { const A = hx(a), B = hx(b); return toHex(A.map((v, i) => v + (B[i] - v) * t)); };
+const ROLES = ['primary', 'secondary', 'tertiary', 'error', 'success', 'warning'];
+function scheme(s, mode) {
+  const dark = mode === 'dark', bg = s.bg, fg = s.fg, o = {};
+  o.surface = bg; o['on-surface'] = fg;
+  o['surface-container-lowest'] = dark ? mix(bg, '#000000', 0.35) : '#FFFFFF';
+  o['surface-container-low'] = mix(bg, fg, dark ? 0.035 : 0.025);
+  o['surface-container'] = mix(bg, fg, dark ? 0.06 : 0.045);
+  o['surface-container-high'] = mix(bg, fg, dark ? 0.09 : 0.07);
+  o['surface-container-highest'] = mix(bg, fg, dark ? 0.13 : 0.095);
+  o['on-surface-variant'] = mix(fg, bg, dark ? 0.28 : 0.3);
+  o.outline = mix(fg, bg, dark ? 0.5 : 0.48);
+  o['outline-variant'] = mix(fg, bg, dark ? 0.78 : 0.8);
+  for (const r of ROLES) {
+    const R = r[0].toUpperCase() + r.slice(1);
+    o[r] = s[r]; o['on-' + r] = s['on' + R];
+    o[r + '-container'] = s[r + 'Container'] || (dark ? mix(s[r], bg, 0.72) : mix(s[r], '#FFFFFF', 0.82));
+    o['on-' + r + '-container'] = s['on' + R + 'Container'] || (dark ? mix(s[r], fg, 0.4) : mix(s[r], '#000000', 0.55));
+  }
+  o['inverse-surface'] = mix(fg, bg, 0.06);
+  o['inverse-on-surface'] = mix(bg, fg, 0.08);
+  o['inverse-primary'] = dark ? mix(s.primary, '#000000', 0.55) : (s.primaryContainer || mix(s.primary, '#FFFFFF', 0.5));
+  o.scrim = '#000000';
+  o.cta = dark ? o.primary : o['primary-container'];
+  o['on-cta'] = dark ? o['on-primary'] : o['on-primary-container'];
+  if (s.paper) { o.paper = s.paper; o['on-paper'] = s.onPaper; o['paper-muted'] = mix(s.onPaper, s.paper, 0.38); o.stamp = '#146C43'; o['stamp-pending'] = '#2E4FB8'; }
+  return o;
+}
+
+/* ===================== DIRECTIONS ===================== */
+const DIRS = {
+  A: {
+    name: 'A. Receipt',
+    blurb: 'The subject’s own artifact. Receipts and the QR are torn thermal-paper slips on a deep navy ground; gold is the one action colour. Data (amounts, ids, hashes) is set in mono because it is data.',
+    move: 'Signature move: Approved prints a paper slip; Settled stamps it with the block number.',
+    shape: { card: '12px', btn: '9999px', fab: '16px', chip: '8px', dialog: '28px', field: '4px' },
+    density: 'Default M3 density. List items 72, top app bar 64, navigation bar 80.',
+    dark: { bg: '#10141F', fg: '#E7EAF2', primary: '#F2C230', onPrimary: '#261C00', secondary: '#9DB4FF', onSecondary: '#0B1A4A', tertiary: '#A8C0FF', onTertiary: '#0A1A44', error: '#FFB4AB', onError: '#690005', success: '#7CDCA6', onSuccess: '#00391F', warning: '#F7B866', onWarning: '#3B2300', paper: '#F3F0E6', onPaper: '#1D1C18' },
+    light: { bg: '#F2F4F8', fg: '#151A26', primary: '#6F5400', onPrimary: '#FFFFFF', primaryContainer: '#F2C230', onPrimaryContainer: '#261C00', secondary: '#2A4FC0', onSecondary: '#FFFFFF', tertiary: '#3355C2', onTertiary: '#FFFFFF', error: '#BA1A1A', onError: '#FFFFFF', success: '#146C43', onSuccess: '#FFFFFF', warning: '#8A5000', onWarning: '#FFFFFF', paper: '#FFFFFF', onPaper: '#1D1C18' },
+  },
+};
+for (const d of Object.values(DIRS)) { d.scheme = { dark: scheme(d.dark, 'dark'), light: scheme(d.light, 'light') }; }
+
+const SPEC_COLS = ['390 compact', '768 medium', '1280 large', '1600+ xlarge', '1920 / 2560'];
+const SPEC_COMMON = [
+  ['M3 window class', 'compact (<600)', 'medium (600 to 839)', 'large (1200 to 1599)', 'extra-large (1600+)', 'extra-large'],
+  ['App navigation', 'navigation bar 80', 'navigation rail 80 wide', 'rail 80', 'rail 80', 'rail 80'],
+  ['App content column', '100%', '600 max', '600 max, centered', '600 max, centered', '600 max, centered'],
+  ['Landing container', '100%', '100%', '1200 max', '1440 max', '1440 max, centered'],
+  ['Side gutter', '16', '24', '32', '40', '40'],
+  ['Landing section padding (y)', '56', '72', '96', '112', '112'],
+  ['Landing h1 (rem)', '2.75', '4', '4.5', '5.5', '5.5'],
+  ['Landing demo stage', '100%', '100%', '560 wide', '640 wide', '640 wide'],
+  ['/ops grid', '1 column', '1 column', '380 + fluid', '440 + fluid', '440 + fluid, 1760 max'],
+  ['Full-bleed band max', 'n/a', 'n/a', '100%', '100%', '1920, centered'],
+  ['Tailwind screens', 'base', 'medium 600, expanded 840', 'large 1200', 'xlarge 1600', 'wide 1920'],
+  ['Type (M3 roles, rem)', 'display-l 3.5625, display-m 2.8125, display-s 2.25, headline-l 2, headline-m 1.75, headline-s 1.5, title-l 1.375, title-m 1, title-s 0.875, body-l 1, body-m 0.875, body-s 0.75, label-l 0.875, label-m 0.75, label-s 0.6875. Sora for display/headline/title, Manrope for body/label.', '', '', '', ''],
+  ['Components (M3)', 'Top app bar 64. Navigation bar 80, indicator 64 x 32. Extended FAB 56. Buttons 40 (large CTA 56), touch target 48. Filled text field 56. Chips 32. Dialog 280 to 560 wide, padding 24. Snackbar min 48, radius 4.', '', '', '', ''],
+  ['Motion (M3)', 'Emphasized easing cubic-bezier(.2,0,0,1). Screen changes 300 ms (medium2). Status chip change 200 ms. Snackbar enter 300 ms emphasized-decelerate (.05,.7,.1,1). Off under reduced motion.', '', '', '', ''],
+];
+const SPEC_DIR = {
+  A: [['Signature motion', 'Receipt slip prints in (clip from top) 400 ms emphasized-decelerate; Settled stamp lands 200 ms. NFC ring 1.6 s loop.', '', '', '', '']],
+};
+
+const SCREENS = [
+  { g: 'Public', id: 'landing', label: 'Landing with live demo', n: 1 },
+  { g: 'App', id: 'app', label: 'Role picker' },
+  { g: 'Cashier', id: 'cashier-tap', label: 'Tap ID' },
+  { g: 'Cashier', id: 'cashier-lookup', label: 'Look up by number', n: 1 },
+  { g: 'Cashier', id: 'cashier-link', label: 'Link new ID' },
+  { g: 'Cashier', id: 'cashier-load', label: 'Load credits' },
+  { g: 'Cashier', id: 'cashier-done', label: 'Loaded + tx' },
+  { g: 'Stall /pos', id: 'pos-keypad', label: 'Charge (keypad)' },
+  { g: 'Stall /pos', id: 'pos-tap', label: 'Student taps ID' },
+  { g: 'Stall /pos', id: 'pos-confirm', label: 'Confirm name + amount', n: 1 },
+  { g: 'Stall /pos', id: 'pos-pin', label: 'PIN' },
+  { g: 'Stall /pos', id: 'pos-dialog', label: 'Wrong PIN dialog', n: 1 },
+  { g: 'Stall /pos', id: 'pos-approved', label: 'Approved + QR (auto return)' },
+  { g: 'Stall /pos', id: 'pos-today', label: 'Today tab', n: 1 },
+  { g: 'Stall /pos', id: 'pos-queue', label: 'Queue tab', n: 1 },
+  { g: 'Student /me', id: 'me-intro', label: 'First-run intro', n: 1 },
+  { g: 'Student /me', id: 'me-login', label: 'Log in' },
+  { g: 'Student /me', id: 'me-home', label: 'Home (Scan FAB)' },
+  { g: 'Student /me', id: 'me-scan', label: 'Scan receipt' },
+  { g: 'Student /me', id: 'me-receipt', label: 'Receipt: Pending' },
+  { g: 'Student /me', id: 'me-settled', label: 'Settled + snackbar (goal)' },
+  { g: 'Student /me', id: 'me-activity', label: 'Activity', n: 1 },
+  { g: 'Student /me', id: 'me-assistant', label: 'Assistant' },
+  { g: 'Student /me', id: 'me-profile', label: 'Profile', n: 1 },
+  { g: 'Ops', id: 'ops', label: 'Fraud, AI and stalls' },
+  { g: 'States', id: 'states', label: 'Dialogs, banners, empty' },
+];
+const VIEWPORT_H = { 390: 844, 768: 1024, 1280: 800, 1920: 1080, 2560: 1440 };
+
+/* Copy. FIL is a draft for native review; missing keys fall back to English. */
+const S = {
+  en: {
+    openApp: 'Open app', h1: 'Pay with your UMak ID. Even with no signal.', heroSub: 'Tap the ID at the stall, enter your PIN, done. The payment settles on the blockchain as soon as either phone gets signal, and anyone can check it.',
+    tryIt: 'Try the payment yourself', howItWorks: 'How it works', proof: 'Settlements', aiSafety: 'Safety', roadmap: 'Roadmap',
+    demoTap: 'Tap ID', demoPin: 'Enter PIN', demoOnline: 'Bring a phone online', demoAgain: 'Start over',
+    demo0: 'Hold the student ID to the back of the stall phone.', demo1: 'The student types a 4-digit PIN on the stall phone.', demo2: 'Approved with no signal. The receipt waits on both phones.', demo3: 'Settled on Polygon Amoy. The receipt has a public record.',
+    s1t: 'Load', s1: 'The cashier taps the ID and mints credits from MetaMask. The top-up appears on the explorer.',
+    s2t: 'Pay offline', s2: 'At the stall: tap the ID, confirm, enter the PIN. The stall shows a receipt QR for the student’s phone.',
+    s3t: 'Settle', s3: 'Whichever phone gets signal first sends the receipt. The contract settles it once and ignores the copy.',
+    feedT: 'Latest settlements', feedSub: 'Read from the TagakPeso contract. Each row opens on the explorer.',
+    aiT: 'What keeps offline payments safe', ai1t: 'A personal offline limit', ai1: 'Each student gets an offline cap from their top-ups and payment history, instead of a flat 200 pesos.',
+    ai2t: 'Clone detection', ai2: 'The same ID at two stalls minutes apart, odd amounts, or bursts of small payments get flagged. A flagged ID drops to a 0 peso offline cap.',
+    ai3t: 'A spending assistant', ai3: 'Students ask what they spent this week and get an answer built only from their own receipts.',
+    limitsT: 'Known limits', l1: 'ID chips can be cloned.', l1a: 'The PIN, offline caps and clone detection limit the damage. Anti-clone IDs are on the roadmap.',
+    l2: 'Two offline stalls could spend the same last pesos.', l2a: 'The contract rejects the overdraft at settlement and that offline cap drops to 0.',
+    l3: 'A receipt settles only when a phone gets signal.', l3a: 'Both phones carry it. A Bluetooth relay between phones is the roadmap answer.',
+    l4: 'Testnet only.', l4a: 'No real money. A pilot needs university approval and BSP review.',
+    r1t: 'Bluetooth mesh relay', r1: 'Receipts hop phone to phone until one reaches signal.', r2t: 'Anti-clone IDs', r2: 'NTAG 424 DNA cards sign every tap.', r3t: 'UMak pilot', r3: 'With university approval and BSP review.',
+    who: 'Who is using this phone?', cashier: 'Cashier', cashierSub: 'Load credits to a student ID', stall: 'Stall', stallSub: 'Take payments, works offline', student: 'Student', studentSub: 'Balance and receipts',
+    opsLink: 'Ops panel for the projector', remembered: 'This phone remembers your pick.',
+    tapId: 'Tap student ID', tapHint: 'Hold the ID flat on the back of this phone.', startScan: 'Start scanning', recentLoads: 'Recent loads', cantRead: 'Card won’t read? Look up by student number',
+    lookupT: 'Look up student', searchNo: 'Student number', lookupSup: 'Exact match only. Ask to see the ID.', select: 'Select',
+    linkT: 'Link new ID', notLinked: 'This ID is not linked yet', studentNo: 'Student number', name: 'Full name', setPin: 'Student sets a 4-digit PIN', confirmPin: 'Confirm PIN',
+    consentLink: 'The student agrees. We store their student number, name, and a hash of the ID and PIN, never the PIN itself.', privacy: 'Privacy notice', saveCont: 'Save and continue',
+    loadT: 'Load credits', balance: 'Balance', amount: 'Amount', mint: 'Mint in MetaMask', mintHint: 'Opens MetaMask to sign. Testnet credits, no real money.',
+    loaded: 'Loaded', nowHas: 'now has', viewExplorer: 'View on explorer', nextStudent: 'Next student',
+    charge: 'Charge', today: 'Today', queue: 'Queue', studentTap: 'Student, tap your ID', cancel: 'Cancel',
+    confirmT: 'Confirm payment', payTo: 'Pay to', confirm: 'Confirm', notYou: 'Not you? Cancel and tap again.',
+    enterPin: 'Enter your PIN', yourCap: 'Offline limit for this ID', typeAny: 'Type any 4 digits to continue.', wrongDemo: 'Show the wrong PIN dialog',
+    dlgPinT: 'Wrong PIN', dlgPin: '2 tries left. After 3 wrong tries this ID is locked on this phone for 5 minutes.', tryAgain: 'Try again',
+    approved: 'Approved', scanThis: 'Student, scan this receipt', pendingNote: 'Pending. Settles when either phone gets signal.', nextSale: 'Next sale', autoNext: 'Back to the keypad after the scan, or in 20 s.', noPhone: 'No phone? This stall settles the receipt.',
+    salesN: 'sales', busy: 'Busy hours, forecast', prep: 'Prep more stock from 11 AM to 1 PM.', waitingN: 'receipts waiting for signal', push: 'Push now', lastTry: 'Last try 10:42, no signal',
+    introNext: 'Next', introStart: 'Get started', skip: 'Skip',
+    intro1t: 'Your UMak ID is your wallet', intro1: 'Tap the ID you already carry at any HeronPay stall.',
+    intro2t: 'Pay with no signal', intro2: 'The stall approves the payment offline and shows a receipt QR.',
+    intro3t: 'Scan the receipt to track it', intro3: 'Your phone keeps the receipt and settles it on the blockchain when you get signal.',
+    loginT: 'Log in once on this phone', pin: 'PIN', consentLogin: 'I agree to the privacy notice. My receipts stay on this phone until they settle.', login: 'Log in', loginHint: 'Needs signal the first time only.',
+    hi: 'Hi, Juan', available: 'Available', onChain: 'on-chain', pendingW: 'pending', scanReceipt: 'Scan receipt', recent: 'Recent',
+    home: 'Home', activity: 'Activity', assistant: 'Assistant', profile: 'Profile', all: 'All',
+    pending: 'Pending', settled: 'Settled', failed: 'Failed', flagged: 'Flagged',
+    camera: 'Point the camera at the receipt QR on the stall phone.', simScan: 'Simulate: QR scanned', receiptT: 'Receipt', waitingSignal: 'Waiting for signal. Saved on this phone.',
+    simOnline: 'Simulate: phone back online', settledNote: 'Settled on Polygon Amoy. This record is public and permanent.', snack: '₱85.00 at Kuya’s Grill settled', view: 'View',
+    asNote: 'Answers only from your receipts. When you ask, your receipts are sent to an AI service.', ask: 'Ask about your spending',
+    q1: 'How much did I spend today?', a1: 'You spent 85 pesos today, all at Kuya’s Grill. That payment is still pending. You have 415 pesos left, about 5 rice meals.',
+    language: 'Language', changePin: 'Change PIN', dataReq: 'Data requests', logout: 'Log out', offlineCapMe: 'Your offline limit',
+    online: 'Online', offline: 'Offline', synced: 'Synced 10:42', back: 'Back', sample: 'Sample',
+    testnet: 'Testnet only, no real money. Not affiliated with or endorsed by the University of Makati.',
+  },
+  fil: {
+    openApp: 'Buksan ang app', h1: 'Magbayad gamit ang UMak ID. Kahit walang signal.', heroSub: 'I-tap ang ID sa stall, ilagay ang PIN, tapos na. Nase-settle ang bayad sa blockchain kapag may signal na ang isa sa mga phone, at puwedeng i-check ng kahit sino.',
+    tryIt: 'Subukan ang pagbabayad', howItWorks: 'Paano gumagana',
+    demoTap: 'I-tap ang ID', demoPin: 'Ilagay ang PIN', demoOnline: 'I-online ang phone', demoAgain: 'Ulitin',
+    demo0: 'Idikit ang student ID sa likod ng phone ng stall.', demo1: 'Ita-type ng estudyante ang 4-digit na PIN.', demo2: 'Aprubado kahit walang signal. Nasa dalawang phone ang resibo.', demo3: 'Na-settle sa Polygon Amoy. May pampublikong record ang resibo.',
+    s1t: 'Mag-load', s2t: 'Magbayad offline', s3t: 'Mag-settle',
+    who: 'Sino ang gumagamit ng phone na ito?', cashierSub: 'Mag-load ng credits sa student ID', stallSub: 'Tumanggap ng bayad, kahit offline', student: 'Estudyante', studentSub: 'Balance at mga resibo',
+    tapId: 'I-tap ang student ID', tapHint: 'Idikit nang patag ang ID sa likod ng phone.', startScan: 'Simulan ang pag-scan', cantRead: 'Ayaw mabasa ng card? Hanapin gamit ang student number',
+    lookupT: 'Hanapin ang estudyante', linkT: 'I-link ang bagong ID', notLinked: 'Hindi pa naka-link ang ID na ito', name: 'Buong pangalan', setPin: 'Mag-set ng 4-digit PIN ang estudyante', confirmPin: 'Ulitin ang PIN',
+    saveCont: 'I-save at magpatuloy', loadT: 'Mag-load ng credits', amount: 'Halaga', mint: 'I-mint sa MetaMask', mintHint: 'Bubuksan ang MetaMask para pumirma. Testnet credits, walang totoong pera.',
+    loaded: 'Na-load', nowHas: 'ay may', viewExplorer: 'Tingnan sa explorer', nextStudent: 'Susunod na estudyante',
+    charge: 'Singilin', today: 'Ngayon', queue: 'Pila', studentTap: 'Estudyante, i-tap ang ID mo', cancel: 'Kanselahin',
+    confirmT: 'Kumpirmahin ang bayad', payTo: 'Bayad kay', confirm: 'Kumpirmahin', notYou: 'Hindi ikaw? Kanselahin at i-tap ulit.',
+    enterPin: 'Ilagay ang PIN mo', yourCap: 'Offline limit ng ID na ito', dlgPinT: 'Maling PIN', dlgPin: '2 subok na lang. Pagkatapos ng 3 maling subok, naka-lock ang ID sa phone na ito nang 5 minuto.', tryAgain: 'Subukan ulit',
+    approved: 'Aprubado', scanThis: 'Estudyante, i-scan ang resibong ito', pendingNote: 'Pending. Mase-settle kapag may signal na ang isang phone.', nextSale: 'Susunod na benta', autoNext: 'Babalik sa keypad pagkatapos ng scan, o sa loob ng 20 segundo.',
+    salesN: 'benta', busy: 'Mataong oras, forecast', waitingN: 'resibong naghihintay ng signal', push: 'I-push ngayon',
+    introNext: 'Susunod', introStart: 'Magsimula', skip: 'Laktawan',
+    intro1t: 'Ang UMak ID mo ang wallet mo', intro1: 'I-tap ang ID na dala mo na sa kahit anong HeronPay stall.', intro2t: 'Magbayad kahit walang signal', intro2: 'Inaaprubahan ng stall ang bayad offline at nagpapakita ng resibong QR.', intro3t: 'I-scan ang resibo para masubaybayan', intro3: 'Itinatago ng phone mo ang resibo at sine-settle ito kapag may signal ka na.',
+    loginT: 'Mag-log in nang isang beses sa phone na ito', consentLogin: 'Sang-ayon ako sa privacy notice. Nasa phone ko ang mga resibo hanggang ma-settle.', login: 'Mag-log in', loginHint: 'Kailangan ng signal sa unang beses lang.',
+    available: 'Magagamit', scanReceipt: 'I-scan ang resibo', recent: 'Kamakailan', failed: 'Hindi natuloy', profile: 'Profile', all: 'Lahat',
+    camera: 'Itutok ang camera sa resibong QR sa phone ng stall.', receiptT: 'Resibo', waitingSignal: 'Naghihintay ng signal. Naka-save sa phone na ito.',
+    settledNote: 'Na-settle sa Polygon Amoy. Pampubliko at permanente ang record na ito.', snack: 'Na-settle ang ₱85.00 sa Kuya’s Grill', view: 'Tingnan',
+    asNote: 'Sumasagot lang mula sa mga resibo mo. Kapag nagtanong ka, ipinapadala ang mga resibo mo sa isang AI service.', ask: 'Magtanong tungkol sa gastos mo',
+    q1: 'Magkano ang nagastos ko ngayon?', a1: '85 piso ang nagastos mo ngayon, lahat sa Kuya’s Grill. Pending pa ang bayad na iyon. May 415 piso ka pa, mga 5 rice meal.',
+    language: 'Wika', changePin: 'Palitan ang PIN', logout: 'Mag-log out', back: 'Bumalik',
+    testnet: 'Testnet lang, walang totoong pera. Hindi kaanib o inendorso ng University of Makati.',
+  },
+};
+
+/* ===================== STATE ===================== */
+const st = { view: 'screens', dir: 'A', theme: 'dark', lang: 'en', width: 390, scale: 'fit', screen: 'me-home', amt: '85' };
+try { const saved = JSON.parse(localStorage.getItem('heron-board-a') || 'null'); if (saved) Object.assign(st, saved); } catch (e) {}
+if (!SCREENS.find((x) => x.id === st.screen)) st.screen = 'me-home';
+function save() { try { localStorage.setItem('heron-board-a', JSON.stringify(st)); } catch (e) {} }
+
+/* ===================== M3 COMPONENTS ===================== */
+const peso = (n) => '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const ic = (name, cls = '', fill = false) => `<span class="ms ${cls}${fill ? ' fill' : ''}" aria-hidden="true">${name}</span>`;
+const R = (c, k) => DIRS[c.d].shape[k];
+function sample(c) { return `<span class="inline-flex h-5 items-center rounded-[4px] border border-dashed border-outline px-1.5 text-label-s font-semibold text-on-surface-variant align-middle">${c.t('sample')}</span>`; }
+function btn(c, kind, label, { go, icon, size = 'm', full, attrs = '' } = {}) {
+  const sz = size === 'l' ? 'h-14 px-7 text-title-m gap-2.5' : 'h-10 px-6 text-label-l gap-2';
+  const k = { filled: 'bg-cta text-on-cta', tonal: 'bg-secondary-container text-on-secondary-container', outlined: 'border border-outline text-primary', text: 'text-primary !px-3' }[kind];
+  const shape = 'rounded-full';
+  return `<button ${go ? `data-go="${go}"` : ''} ${attrs} class="sl relative inline-flex items-center justify-center font-semibold ${sz} ${k} ${shape} ${full ? 'w-full' : ''}">${icon ? ic(icon, '!text-[20px]') : ''}<span>${label}</span></button>`;
+}
+function iconBtn(icon, label, attrs = '', cls = '') { return `<button ${attrs} aria-label="${label}" class="sl relative grid h-12 w-12 shrink-0 place-items-center rounded-full ${cls}">${ic(icon)}</button>`; }
+function topBar(c, title, { back, actions = '', tone } = {}) {
+  let bg = 'bg-surface text-on-surface';
+  if (tone) bg = `bg-${tone} text-on-${tone} bar-tone`;
+  return `<header class="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-1 px-1 ${bg}">${back ? iconBtn('arrow_back', c.t('back'), `data-go="${back}"`) : '<span class="w-3"></span>'}<h1 class="min-w-0 flex-1 truncate px-1 font-display text-title-l font-semibold">${title}</h1><div class="flex items-center gap-1 pr-2">${actions}</div></header>`;
+}
+function netChip(c, on, cls = '') {
+  return `<span class="inline-flex h-8 items-center gap-1.5 rounded-[${R(c, 'chip')}] px-2.5 text-label-l font-semibold ${on ? 'bg-success-container text-on-success-container' : 'bg-warning-container text-on-warning-container'} ${cls}">${ic(on ? 'cloud_done' : 'cloud_off', '!text-[18px]')}${on ? c.t('online') : c.t('offline')}</span>`;
+}
+function statusChip(c, s) {
+  const [col, icon] = { settled: ['success', 'check_circle'], pending: ['tertiary', 'schedule'], failed: ['error', 'cancel'], flagged: ['error', 'flag'] }[s];
+  const k = `bg-${col}-container text-on-${col}-container`;
+  return `<span class="inline-flex h-7 shrink-0 items-center gap-1 rounded-[${R(c, 'chip')}] pl-1.5 pr-2.5 text-label-m font-bold ${k}">${ic(icon, '!text-[18px]', true)}${c.t(s)}</span>`;
+}
+function chip(c, label, sel, attrs = '') {
+  return `<button ${attrs} class="sl relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[${R(c, 'chip')}] px-3 text-label-l font-semibold ${sel ? 'bg-secondary-container text-on-secondary-container' : 'border border-outline text-on-surface-variant'}">${sel ? ic('check', '!text-[18px]') : ''}${label}</button>`;
+}
+function field(c, id, label, value, { type = 'text', support = '', mode = '', lead = '' } = {}) {
+  return `<label for="${id}" class="block"><span class="relative flex h-14 items-end gap-3 rounded-t-[${R(c, 'field')}] border-b border-on-surface-variant bg-surface-container-highest px-4 pb-2 focus-within:border-b-2 focus-within:border-primary">${lead ? ic(lead, 'mb-1 text-on-surface-variant') : ''}<span class="min-w-0 flex-1"><span class="block text-body-s text-on-surface-variant">${label}</span><input id="${id}" type="${type}" ${mode ? `inputmode="${mode}"` : ''} value="${value}" class="w-full bg-transparent text-body-l text-on-surface outline-none"></span></span>${support ? `<span class="block px-4 pt-1 text-body-s text-on-surface-variant">${support}</span>` : ''}</label>`;
+}
+function listItem(c, { lead = '', head, sup = '', trail = '', go, tag = 'button' }) {
+  const el = go ? 'button' : 'div';
+  return `<${el} ${go ? `data-go="${go}"` : ''} class="${go ? 'sl relative' : ''} flex w-full min-h-[72px] items-center gap-4 px-4 py-2 text-left">${lead}<span class="min-w-0 flex-1"><span class="block truncate text-body-l text-on-surface">${head}</span>${sup ? `<span class="block truncate text-body-m text-on-surface-variant">${sup}</span>` : ''}</span>${trail}</${el}>`;
+}
+function avatar(c, icon, tone = 'secondary') { return `<span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-${tone}-container text-on-${tone}-container">${ic(icon, '!text-[22px]')}</span>`; }
+function navBar(c, items, active) {
+  const bar = items.map(([k, go, icon]) => { const on = k === active; return `<button data-go="${go}" class="flex flex-col items-center justify-center gap-1 pt-3 pb-4"><span class="grid h-8 w-16 place-items-center rounded-full ${on ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant'}">${ic(icon, '', on)}</span><span class="text-label-m font-semibold ${on ? 'text-on-surface' : 'text-on-surface-variant'}">${c.t(k)}</span></button>`; }).join('');
+  const rail = items.map(([k, go, icon]) => { const on = k === active; return `<button data-go="${go}" class="flex w-20 flex-col items-center gap-1"><span class="grid h-8 w-14 place-items-center rounded-full ${on ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant'}">${ic(icon, '', on)}</span><span class="text-label-m font-semibold ${on ? 'text-on-surface' : 'text-on-surface-variant'}">${c.t(k)}</span></button>`; }).join('');
+  return `<nav aria-label="Main" class="sticky bottom-0 z-20 mt-auto grid h-20 bg-surface-container medium:hidden" style="grid-template-columns:repeat(${items.length},minmax(0,1fr))">${bar}</nav>
+  <nav aria-label="Main" class="fixed inset-y-0 left-0 z-20 hidden w-20 flex-col items-center gap-3 bg-surface-container pt-6 medium:flex">${rail}</nav>`;
+}
+const ME_NAV = [['home', 'me-home', 'home'], ['activity', 'me-activity', 'receipt_long'], ['assistant', 'me-assistant', 'smart_toy'], ['profile', 'me-profile', 'account_circle']];
+const POS_NAV = [['charge', 'pos-keypad', 'point_of_sale'], ['today', 'pos-today', 'insights'], ['queue', 'pos-queue', 'sync']];
+function app(c, inner, { nav } = {}) {
+  return `<div class="min-h-screen ${nav ? 'medium:pl-20' : ''}"><div class="appcol relative mx-auto flex min-h-screen w-full max-w-[600px] flex-col expanded:border-x expanded:border-outline-variant">${inner}</div></div>`;
+}
+function fab(c, icon, label, go) {
+  return `<div class="pointer-events-none sticky bottom-24 z-30 -mt-14 flex justify-end px-4 medium:bottom-6"><button data-go="${go}" class="sl relative pointer-events-auto flex h-14 items-center gap-3 rounded-[${R(c, 'fab')}] bg-cta pl-4 pr-5 text-label-l font-bold text-on-cta shadow-3 ">${ic(icon)}${label}</button></div>`;
+}
+function snackbar(c, text, action, go) {
+  return `<div class="pointer-events-none sticky bottom-24 z-30 px-4 pt-2 medium:bottom-6"><div role="status" class="snack pointer-events-auto flex min-h-12 items-center gap-2 rounded-[4px] bg-inverse-surface py-1.5 pl-4 pr-2 text-body-m text-inverse-on-surface shadow-3">${ic('check_circle', '!text-[20px]', true)}<span class="flex-1">${text}</span><button data-go="${go}" class="h-10 rounded-full px-3 text-label-l font-bold text-inverse-primary">${action}</button></div></div>`;
+}
+function dialog(c, { icon, title, body, actions }) {
+  return `<div class="absolute inset-0 z-40 grid place-items-center p-6 scrim"><div role="alertdialog" aria-modal="true" aria-labelledby="dlg-t" class="w-full min-w-[280px] max-w-[560px] rounded-[${R(c, 'dialog')}] bg-surface-container-high p-6 text-center shadow-3"><span class="text-secondary">${ic(icon, '!text-[24px]')}</span><h2 id="dlg-t" class="mt-4 font-display text-headline-s font-semibold text-on-surface">${title}</h2><p class="mt-4 text-left text-body-m text-on-surface-variant">${body}</p><div class="mt-6 flex justify-end gap-2">${actions}</div></div></div>`;
+}
+function card(c, inner, cls = '') { return `<div class="rounded-[${R(c, 'card')}] bg-surface-container-low p-4 ${cls}">${inner}</div>`; }
+function progress(cls = '') { return `<div class="h-1 w-full overflow-hidden rounded-full bg-surface-container-highest" role="progressbar" aria-label="Time left"><div class="countdown h-full bg-primary ${cls}"></div></div>`; }
+function qr(seed = 7, cls = 'w-40 h-40') {
+  const n = 25; let s = seed * 9301 + 49297; const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  let r = '';
+  const finder = (x, y) => `<rect x="${x}" y="${y}" width="7" height="7"/><rect x="${x + 1}" y="${y + 1}" width="5" height="5" fill="#FFFFFF"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3"/>`;
+  const inF = (x, y) => (x < 8 && y < 8) || (x > n - 9 && y < 8) || (x < 8 && y > n - 9);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (!inF(x, y) && rnd() > 0.52) r += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+  return `<svg class="${cls}" viewBox="-2 -2 29 29" role="img" aria-label="Receipt QR code, sample" style="background:#FFFFFF;fill:#000000" shape-rendering="crispEdges">${finder(0, 0)}${finder(n - 7, 0)}${finder(0, n - 7)}${r}</svg>`;
+}
+function wordmark(c, big) {
+  const sz = big ? 'text-headline-s' : 'text-title-l';
+  return `<span class="inline-flex items-center gap-2 font-display font-bold ${sz} tracking-[-0.02em]"><span class="grid h-8 w-8 place-items-center rounded-[10px] bg-cta text-on-cta">${ic('contactless', '!text-[20px]')}</span>HeronPay</span>`;
+}
+function langToggle(c) {
+  const b = (l, lab) => `<button data-lang="${l}" class="h-8 min-w-[44px] rounded-full px-2 text-label-l font-bold ${c.lang === l ? 'bg-secondary-container text-on-secondary-container' : 'opacity-80'}">${lab}</button>`;
+  return `<span class="inline-flex items-center gap-0.5 rounded-full border border-outline-variant p-0.5" role="group" aria-label="Language">${b('en', 'EN')}${b('fil', 'FIL')}</span>`;
+}
+function tapTarget(c, label, hint) {
+  return `<div class="flex flex-col items-center gap-5 py-10 text-center"><div class="relative grid h-44 w-44 place-items-center rounded-full bg-surface-container-high text-primary"><span class="nfc-ring absolute inset-0 rounded-full border-2 border-primary"></span>${ic('contactless', '!text-[72px]')}</div><p class="font-display text-headline-s font-semibold">${label}</p><p class="max-w-[30ch] text-body-l text-on-surface-variant">${hint}</p></div>`;
+}
+/* Signature A: thermal receipt slip */
+function slip(c, { status = 'pending', big } = {}) {
+  const stamp = big ? '' : status === 'settled' ? `<div class="stamp stamp-ok" aria-hidden="true">SETTLED<small>block 52,418,903</small></div>` : status === 'pending' ? `<div class="stamp stamp-pend" aria-hidden="true">PENDING<small>waiting for signal</small></div>` : '';
+  return `<div class="slip-wrap"><div class="slip relative bg-paper px-5 py-7 text-on-paper ${big ? 'print-in' : ''} ${stamp ? '!pb-24' : ''}"><p class="text-center font-display text-title-m font-bold">Kuya's Grill</p><p class="text-center font-mono text-body-s text-paper-muted">HeronPay receipt, Nov 13 2026 10:41</p>
+  <div class="my-3 border-t border-dashed border-paper-muted"></div>
+  <dl class="grid grid-cols-[1fr_auto] gap-y-1 font-mono text-body-m"><dt>Rice meal</dt><dd>85.00</dd><dt class="text-paper-muted">Paid by</dt><dd class="text-paper-muted">Juan D. …5E:80</dd></dl>
+  <div class="my-3 border-t border-dashed border-paper-muted"></div>
+  <div class="flex items-baseline justify-between"><span class="font-mono text-body-m">TOTAL</span><span class="font-mono text-headline-s font-semibold tabular-nums">${peso(85)}</span></div>
+  ${big ? `<div class="mt-4 grid place-items-center">${qr(5, 'w-48 h-48')}</div>` : ''}
+  <p class="mt-3 text-center font-mono text-label-s text-paper-muted">id 7c1e9a40-55b2-4d1f</p>${stamp}</div></div>`;
+}
+
+/* ===================== FOOTER + LEGAL ===================== */
+const LEGAL = {
+  privacy: ['Privacy notice (outline)', ['Who we are: the HeronPay hackathon team. Contact: team email (placeholder).', 'What we collect: student number, full name, a SHA-256 hash of the ID chip UID, a hash of the PIN (never the PIN), and receipts (amount, stall, time).', 'Why: to load credits, accept payments, settle them, set offline limits and detect cloned IDs.', 'On-chain: settled payments are public and permanent on Polygon Amoy. They show wallet addresses and amounts, not names.', 'AI: receipts are scored for offline limits and fraud. The assistant sends your receipts to an AI service only when you ask it something.', 'How long: until the demo ends (placeholder, team to confirm).', 'Your rights under the Data Privacy Act of 2012 (RA 10173): access, correction, and deletion of off-chain data.']],
+  terms: ['Terms of use (outline)', ['TagakPeso (tPHP) is a testnet token with no cash value. There is no cash-out.', 'The demo may be reset at any time.', 'A payment accepted offline can fail at settlement if the balance is short.', 'Keep your PIN private. Report a lost ID to the cashier.', 'Not affiliated with or endorsed by the University of Makati.']],
+  data: ['Data requests (outline)', ['Email the team (placeholder address) with your student number.', 'We can show, correct, or delete your off-chain record: name, student number, hashes, receipts.', 'Settled payments on the blockchain cannot be deleted. Deleting your record unlinks your name from that address.']],
+  cookies: ['Cookies and storage (outline)', ['Essential storage only: your login on this phone, the offline receipt queue, and the cached student list on stall phones.', 'No analytics or advertising cookies, so there is no cookie banner. If analytics is added later, a consent bar with Accept, Reject and Customize comes with it.']],
+  disclaimer: ['Disclaimer (outline)', ['HeronPay is a student hackathon project and is not affiliated with or endorsed by the University of Makati.', 'Testnet only. No real money moves.', 'A real pilot needs university approval and BSP review.']],
+  team: ['About the team (placeholder)', ['Four builders: contract, API and AI, stall POS, cashier and student screens. Names to be added by the team.']],
+};
+function footer(c, wrap) {
+  const a = (txt, attrs) => `<li><a href="#" ${attrs} class="underline-offset-4 hover:underline">${txt}</a></li>`;
+  const col = (h, links) => `<div class="min-w-0"><h3 class="mb-3 font-display text-title-s font-semibold text-on-surface">${h}</h3><ul class="space-y-2 text-body-m text-on-surface-variant">${links.join('')}</ul></div>`;
+  return `<footer class="border-t border-outline-variant bg-surface-container-low"><div class="${wrap} py-12 xlarge:py-16"><div class="grid grid-cols-2 gap-8 expanded:grid-cols-4">
+    <div class="col-span-2 space-y-3 expanded:col-span-1">${wordmark(c)}<p class="max-w-[34ch] text-body-m text-on-surface-variant">Campus payments with the UMak ID you already carry. Built for a 24-hour hackathon.</p></div>
+    ${col('Product', [a(c.t('openApp'), 'data-go="app"'), a(c.t('howItWorks'), 'href="#how"'), a(c.t('proof'), 'href="#proof"'), a('Ops panel', 'data-go="ops"')])}
+    ${col('Team', [a('About the team', 'data-legal="team"'), `<li>Contact: <span class="select-all">team email (placeholder)</span></li>`])}
+    ${col('Legal', [a('Privacy notice', 'data-legal="privacy"'), a('Terms of use', 'data-legal="terms"'), a('Data requests', 'data-legal="data"'), a('Cookies: essential only', 'data-legal="cookies"'), a('Disclaimer', 'data-legal="disclaimer"')])}
+  </div><div class="mt-10 flex flex-col gap-2 border-t border-outline-variant pt-6 text-body-s text-on-surface-variant expanded:flex-row expanded:justify-between"><p>${c.t('testnet')}</p><p>No cookie banner: the app keeps only what it needs to work offline.</p><p>© 2026 HeronPay hackathon team</p></div></div></footer>`;
+}
+
+/* ===================== LANDING ===================== */
+function demoStage(c) {
+  const t = c.t;
+  const steps = [['demoTap', 'demo0'], ['demoPin', 'demo1'], ['demoOnline', 'demo2'], ['demoAgain', 'demo3']];
+  const caption = steps.map(([, d], i) => `<p data-demo-show="${i}" ${i ? 'hidden' : ''} class="text-body-l text-on-surface-variant">${t(d)}</p>`).join('');
+  const button = steps.map(([b], i) => `<span data-demo-show="${i}" ${i ? 'hidden' : ''}>${btn(c, 'filled', t(b), { size: 'l', icon: ['contactless', 'password', 'cloud_done', 'undo'][i], attrs: 'data-demo-next' })}</span>`).join('');
+  const dots = `<div class="flex gap-2" aria-hidden="true">${[0, 1, 2, 3].map(() => '<span class="h-3 w-3 rounded-full bg-on-surface"></span>').join('')}</div>`;
+  let vis;
+  vis = `<div data-demo-show="0" class="grid min-h-[340px] place-items-center">${tapTarget(c, t('tapId'), '').replace('py-10', 'py-2')}</div>
+    <div data-demo-show="1" hidden class="grid min-h-[340px] place-items-center gap-4"><p class="font-display text-headline-s">${peso(85)} to Kuya's Grill</p>${dots}</div>
+    <div data-demo-show="2" hidden class="mx-auto max-w-[320px]">${slip(c, { status: 'pending' })}</div>
+    <div data-demo-show="3" hidden class="mx-auto max-w-[320px]">${slip(c, { status: 'settled' })}</div>`;
+  const bar = `<div class="flex items-center gap-2" aria-hidden="true">${[0, 1, 2, 3].map((i) => `<span data-demo-pip="${i}" class="h-1.5 flex-1 rounded-full ${i ? 'bg-surface-container-highest' : 'bg-primary'}"></span>`).join('')}</div>`;
+  return `<div class="demo space-y-5 rounded-[${R(c, 'card')}] bg-surface-container p-5 medium:p-8" aria-live="polite"><div class="flex items-center justify-between gap-3"><h2 class="font-display text-title-l font-semibold">${t('tryIt')}</h2>${netChip(c, false)}</div>${bar}${vis}<div class="space-y-4">${caption}${button}</div><p class="text-body-s text-on-surface-variant">Demo with sample data. No network calls.</p></div>`;
+}
+function landing(c) {
+  const t = c.t;
+  const wrap = 'mx-auto w-full max-w-[1200px] xlarge:max-w-[1440px] px-4 medium:px-6 large:px-8 xlarge:px-10';
+  const sec = 'py-14 medium:py-[72px] large:py-24 xlarge:py-28';
+  const h2 = 'font-display text-headline-m font-semibold large:text-headline-l text-balance';
+  const nav = `<header class="sticky top-0 z-30 border-b border-outline-variant bg-surface"><div class="${wrap}"><div class="flex h-16 items-center justify-between gap-4">${wordmark(c)}
+    <nav class="hidden items-center gap-6 text-label-l font-semibold expanded:flex"><a href="#how">${t('howItWorks')}</a><a href="#proof">${t('proof')}</a><a href="#safety">${t('aiSafety')}</a><a href="#roadmap">${t('roadmap')}</a></nav>
+    <div class="flex items-center gap-2">${langToggle(c)}${btn(c, 'filled', t('openApp'), { go: 'app' })}</div></div></div></header>`;
+  const steps = [[t('s1t'), t('s1'), 'payments'], [t('s2t'), t('s2'), 'contactless'], [t('s3t'), t('s3'), 'verified']];
+  const feed = [['10:44:52', 85, "Juan D. → Kuya's Grill", '0x41d0…77e2'], ['10:30:02', 40, "Ana R. → Kuya's Grill", '0x9c11…3af0'], ['09:58:13', 500, 'Cashier → Juan D. (top-up)', '0x8f2c…91ab'], ['09:50:40', 85, "Liza M. → Ate's Drinks", '0x2b7e…d014']];
+  const limits = [[t('l1'), t('l1a')], [t('l2'), t('l2a')], [t('l3'), t('l3a')], [t('l4'), t('l4a')]];
+  const ai = [[t('ai1t'), t('ai1'), 'tune'], [t('ai2t'), t('ai2'), 'flag'], [t('ai3t'), t('ai3'), 'smart_toy']];
+  const heroCopy = `<div class="min-w-0 space-y-6"><h1 class="font-display font-bold leading-[1.04] tracking-[-0.03em] text-balance text-[2.75rem] medium:text-[4rem] large:text-[4.5rem] xlarge:text-[5.5rem]">${t('h1')}</h1><p class="max-w-[52ch] text-body-l text-on-surface-variant large:text-[1.125rem] large:leading-7">${t('heroSub')}</p><div class="flex flex-wrap items-center gap-3">${btn(c, 'filled', t('openApp'), { go: 'app', size: 'l' })}<a href="https://amoy.polygonscan.com/" target="_blank" rel="noopener" class="inline-flex h-14 items-center gap-2 px-3 text-label-l font-semibold text-primary">${t('viewExplorer')} ${ic('open_in_new', '!text-[18px]')}</a></div></div>`;
+  const hero = `<section class="${wrap} ${sec} grid items-center gap-10 large:grid-cols-[minmax(0,1fr)_560px] xlarge:grid-cols-[minmax(0,1fr)_640px]">${heroCopy}${demoStage(c)}</section>`;
+  return `${nav}<main>${hero}
+  <section id="how" class="border-y border-outline-variant bg-surface-container-low"><div class="${wrap} ${sec}"><h2 class="${h2}">${t('howItWorks')}</h2>
+    <ol class="mt-8 grid gap-8 expanded:grid-cols-3">${steps.map(([h, p, icn], i) => `<li class="flex gap-4"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-secondary-container font-display text-title-l font-bold text-on-secondary-container">${i + 1}</span><div><h3 class="font-display text-title-l font-semibold">${h}</h3><p class="mt-1 max-w-[40ch] text-body-l text-on-surface-variant">${p}</p></div></li>`).join('')}</ol></div></section>
+  <section id="proof" class="${wrap} ${sec}"><div class="flex flex-wrap items-end justify-between gap-3"><div><h2 class="${h2}">${t('feedT')}</h2><p class="mt-2 text-body-l text-on-surface-variant">${t('feedSub')}</p></div>${sample(c)}</div>
+    <div class="mt-8 overflow-x-auto rounded-[${R(c, 'card')}] border border-outline-variant"><table class="w-full min-w-[620px] text-left"><thead class="bg-surface-container text-label-l text-on-surface-variant"><tr><th class="px-4 py-3 font-semibold">Time</th><th class="px-4 py-3 font-semibold">Amount</th><th class="px-4 py-3 font-semibold">Payment</th><th class="px-4 py-3 font-semibold">Transaction</th></tr></thead>
+    <tbody class="divide-y divide-outline-variant text-body-m">${feed.map(([ti, a, p, tx]) => `<tr><td class="px-4 py-3 font-mono text-on-surface-variant">${ti}</td><td class="px-4 py-3 font-semibold tabular-nums">${peso(a)}</td><td class="px-4 py-3">${p}</td><td class="px-4 py-3"><a href="https://amoy.polygonscan.com/" target="_blank" rel="noopener" class="inline-flex items-center gap-1 font-mono text-primary underline-offset-4 hover:underline">${tx}${ic('open_in_new', '!text-[16px]')}</a></td></tr>`).join('')}</tbody></table></div></section>
+  <section id="safety" class="${wrap} ${sec} !pt-0 grid gap-12 large:grid-cols-2">
+    <div><h2 class="${h2}">${t('aiT')}</h2><ul class="mt-6 space-y-6">${ai.map(([h, p, icn]) => `<li class="flex gap-4">${avatar(c, icn)}<div><h3 class="font-display text-title-m font-semibold">${h}</h3><p class="mt-1 max-w-[52ch] text-body-l text-on-surface-variant">${p}</p></div></li>`).join('')}</ul></div>
+    <div><h2 class="${h2}">${t('limitsT')}</h2><ul class="mt-6 divide-y divide-outline-variant">${limits.map(([q, a2]) => `<li class="py-4"><p class="text-title-m font-semibold">${q}</p><p class="mt-1 text-body-l text-on-surface-variant">${a2}</p></li>`).join('')}</ul></div></section>
+  <section id="roadmap" class="border-t border-outline-variant"><div class="${wrap} ${sec}"><h2 class="${h2}">${t('roadmap')}</h2><ul class="mt-6 grid gap-6 expanded:grid-cols-3">${[[t('r1t'), t('r1'), 'bluetooth'], [t('r2t'), t('r2'), 'shield'], [t('r3t'), t('r3'), 'school']].map(([h, p, icn]) => `<li class="flex gap-4">${avatar(c, icn, 'tertiary')}<div><h3 class="font-display text-title-m font-semibold">${h}</h3><p class="mt-1 text-body-l text-on-surface-variant">${p}</p></div></li>`).join('')}</ul></div></section>
+  </main>${footer(c, wrap)}`;
+}
+
+/* ===================== APP SCREENS ===================== */
+const SCR = { landing };
+SCR.app = (c) => {
+  const t = c.t;
+  const roles = [['cashier-tap', t('cashier'), t('cashierSub'), 'badge'], ['pos-keypad', t('stall'), t('stallSub'), 'storefront'], ['me-intro', t('student'), t('studentSub'), 'wallet']];
+  return app(c, `${topBar(c, 'HeronPay', { actions: langToggle(c) })}<div class="flex flex-1 flex-col gap-4 px-4 py-6"><h2 class="font-display text-headline-s font-semibold">${t('who')}</h2>
+  <div class="divide-y divide-outline-variant overflow-hidden rounded-[${R(c, 'card')}] bg-surface-container-low">${roles.map(([go, h, p, icn], i) => listItem(c, { go, lead: `<span class="grid h-12 w-12 shrink-0 place-items-center rounded-[${R(c, 'chip')}] bg-secondary-container text-on-secondary-container">${ic(icn)}</span>`, head: `<span class="font-display text-title-m font-semibold">${h}</span>`, sup: p, trail: ic('chevron_right', 'text-on-surface-variant') })).join('')}</div>
+  ${btn(c, 'text', t('opsLink'), { go: 'ops', icon: 'monitoring' })}
+  <p class="mt-auto flex flex-wrap items-center gap-3 text-body-m text-on-surface-variant">${netChip(c, true)} Polygon Amoy testnet. ${t('remembered')}</p></div>`);
+};
+SCR['cashier-tap'] = (c) => {
+  const t = c.t;
+  const loads = [['K12345678', 500, '0x8f2c…91ab', '2 min ago'], ['K11223344', 200, '0x3a07…c4d2', '9 min ago']];
+  return app(c, `${topBar(c, t('cashier'), { back: 'app', actions: `<span class="inline-flex h-8 items-center gap-1.5 rounded-full border border-current/40 px-2.5 font-mono text-label-m opacity-90">${ic('account_balance_wallet', '!text-[16px]')}0x12…9c</span>` })}
+  <div class="flex flex-1 flex-col px-4">${tapTarget(c, t('tapId'), t('tapHint'))}${btn(c, 'filled', t('startScan'), { go: 'cashier-link', size: 'l', full: true, icon: 'contactless' })}
+  <p class="mt-2 text-center text-body-s text-on-surface-variant">Demo: the next tap is an unlinked ID.</p>
+  <div class="mt-2 flex justify-center">${btn(c, 'text', t('cantRead'), { go: 'cashier-lookup', icon: 'person_search' })}</div>
+  <div class="mt-6 mb-6"><div class="flex items-center justify-between px-1 pb-1"><h2 class="font-display text-title-s font-semibold text-on-surface-variant">${t('recentLoads')}</h2>${sample(c)}</div>
+  <div class="divide-y divide-outline-variant">${loads.map(([n, a, tx, ago]) => listItem(c, { lead: avatar(c, 'add_card', 'success'), head: `<span class="font-mono">${n}</span>`, sup: `${tx}, ${ago}`, trail: `<span class="text-title-m font-semibold text-success tabular-nums">+${peso(a)}</span>` })).join('')}</div></div></div>`);
+};
+SCR['cashier-lookup'] = (c) => {
+  const t = c.t;
+  return app(c, `${topBar(c, t('lookupT'), { back: 'cashier-tap' })}<div class="flex flex-1 flex-col gap-4 px-4 py-5">
+  ${field(c, 'q', t('searchNo'), 'K12345678', { lead: 'search', support: t('lookupSup') })}
+  <div class="overflow-hidden rounded-[${R(c, 'card')}] bg-surface-container-low">${listItem(c, { go: 'cashier-load', lead: avatar(c, 'person'), head: 'Juan Dela Cruz', sup: '<span class="font-mono">K12345678</span>, linked, balance ₱0.00', trail: `<span class="text-label-l font-semibold text-primary">${t('select')}</span>` })}</div>
+  <p class="text-body-s text-on-surface-variant">${sample(c)} Lookup works only online. Linking a new card still needs a tap.</p></div>`);
+};
+SCR['cashier-link'] = (c) => {
+  const t = c.t;
+  return app(c, `${topBar(c, t('linkT'), { back: 'cashier-tap' })}<div class="flex flex-1 flex-col gap-4 px-4 py-5">
+  <div class="flex items-center gap-3 rounded-[${R(c, 'card')}] bg-warning-container p-4 text-on-warning-container">${ic('badge')}<div class="min-w-0"><p class="text-title-s font-semibold">${t('notLinked')}</p><p class="font-mono text-body-s">UID 04:A2:3F:1C:9B:5E:80</p></div></div>
+  ${field(c, 'sno', t('studentNo'), 'K12345678')}${field(c, 'sname', t('name'), 'Juan Dela Cruz')}
+  ${field(c, 'spin', t('setPin'), '1234', { type: 'password', mode: 'numeric' })}${field(c, 'spin2', t('confirmPin'), '1234', { type: 'password', mode: 'numeric' })}
+  <label class="flex items-start gap-3 py-1 text-body-m" for="consent-link"><input id="consent-link" type="checkbox" checked class="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--primary)]"><span>${t('consentLink')} <a href="#" data-legal="privacy" class="font-semibold text-primary underline underline-offset-4">${t('privacy')}</a></span></label>
+  <div class="mt-auto mb-4">${btn(c, 'filled', t('saveCont'), { go: 'cashier-load', size: 'l', full: true })}</div></div>`);
+};
+SCR['cashier-load'] = (c) => {
+  const t = c.t;
+  return app(c, `${topBar(c, t('loadT'), { back: 'cashier-tap' })}<div class="flex flex-1 flex-col gap-6 px-4 py-5">
+  ${card(c, `<div class="flex items-center justify-between gap-3"><div><p class="text-title-m font-semibold">Juan Dela Cruz</p><p class="font-mono text-body-m text-on-surface-variant">K12345678</p></div><div class="text-right"><p class="text-label-m text-on-surface-variant">${t('balance')}</p><p class="text-title-l font-semibold tabular-nums">${peso(0)}</p></div></div>`)}
+  <div><p class="text-label-l text-on-surface-variant">${t('amount')}</p><p class="font-display text-display-m font-semibold tabular-nums">${peso(500)}</p></div>
+  <div class="flex flex-wrap gap-2" role="group" aria-label="Amount">${[100, 200, 500, 1000].map((v) => chip(c, peso(v).replace('.00', ''), v === 500)).join('')}</div>
+  <div class="mt-auto mb-4 space-y-2">${btn(c, 'filled', t('mint'), { go: 'cashier-done', size: 'l', full: true, icon: 'account_balance_wallet' })}<p class="text-center text-body-s text-on-surface-variant">${t('mintHint')}</p></div></div>`);
+};
+SCR['cashier-done'] = (c) => {
+  const t = c.t;
+  return app(c, `${topBar(c, t('loaded'), { back: 'cashier-tap' })}<div class="flex flex-1 flex-col gap-5 px-4 py-6">
+  <div class="flex flex-col items-center gap-3 py-6 text-center"><span class="grid h-16 w-16 place-items-center rounded-full bg-success-container text-on-success-container">${ic('check', '!text-[36px]')}</span><p class="font-display text-display-s font-bold tabular-nums">${peso(500)}</p><p class="text-body-l">Juan Dela Cruz ${t('nowHas')} ${peso(500)} tPHP.</p></div>
+  ${card(c, `<p class="text-label-l text-on-surface-variant">Mint transaction ${sample(c)}</p><p class="mt-1 break-all font-mono text-body-m">0x8f2c4e1d…91ab</p><a href="https://amoy.polygonscan.com/" target="_blank" rel="noopener" class="mt-2 inline-flex h-10 items-center gap-1.5 text-label-l font-semibold text-primary">${t('viewExplorer')} ${ic('open_in_new', '!text-[18px]')}</a>`)}
+  <div class="mt-auto mb-4">${btn(c, 'filled', t('nextStudent'), { go: 'cashier-tap', size: 'l', full: true })}</div></div>`);
+};
+function posBar(c, title, opts = {}) { return topBar(c, title, { back: opts.back, tone: opts.tone, actions: netChip(c, false, opts.tone ? '!bg-transparent !text-current' : '') }); }
+SCR['pos-keypad'] = (c) => {
+  const t = c.t;
+  const items = [['Rice meal', 85], ['Siomai', 40], ['Juice', 25]];
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'backspace'];
+  return app(c, `${posBar(c, "Kuya's Grill", { back: 'app' })}<div class="flex flex-1 flex-col gap-4 px-4 py-3">
+  <div class="flex items-center justify-between text-body-s text-on-surface-variant"><span>${t('synced')}, 3 in queue</span>${sample(c)}</div>
+  <div class="py-2 text-center"><p class="text-label-l text-on-surface-variant">${t('amount')}</p><p data-amt class="font-display font-semibold tabular-nums text-display-m">${peso(c.amt)}</p></div>
+  <div class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Quick items">${items.map(([n, v]) => chip(c, `${n} ${v}`, String(v) === c.amt, `data-quick="${v}"`)).join('')}</div>
+  <div class="grid grid-cols-3 gap-2">${keys.map((x) => `<button data-key="${x}" aria-label="${x === 'backspace' ? 'Delete' : x === 'C' ? 'Clear' : x}" class="sl relative h-16 rounded-[${R(c, 'card')}] bg-surface-container-high font-display text-headline-s font-medium">${x === 'backspace' ? ic('backspace') : x}</button>`).join('')}</div>
+  <div class="pb-4">${btn(c, 'filled', `${t('charge')} <span data-amt>${peso(c.amt)}</span>`, { go: 'pos-tap', size: 'l', full: true, attrs: 'data-charge' })}</div></div>${navBar(c, POS_NAV, 'charge')}`, { nav: true });
+};
+SCR['pos-tap'] = (c) => {
+  const t = c.t;
+  return app(c, `${posBar(c, `${t('charge')} ${peso(c.amt)}`, { back: 'pos-keypad' })}<div class="flex flex-1 flex-col px-4">${tapTarget(c, t('studentTap'), t('tapHint'))}
+  <div class="mt-auto mb-4 space-y-2">${btn(c, 'tonal', 'Demo: ID tapped', { go: 'pos-confirm', size: 'l', full: true })}${btn(c, 'text', t('cancel'), { go: 'pos-keypad', full: true })}</div></div>`);
+};
+SCR['pos-confirm'] = (c) => {
+  const t = c.t;
+  return app(c, `${posBar(c, t('confirmT'), { back: 'pos-tap' })}<div class="flex flex-1 flex-col gap-5 px-4 py-6">
+  ${card(c, `<div class="flex items-center gap-4">${avatar(c, 'person')}<div class="min-w-0"><p class="text-title-l font-semibold">Juan D.</p><p class="font-mono text-body-m text-on-surface-variant">K1234…678, ID …5E:80</p></div></div>`)}
+  <div class="text-center"><p class="text-body-l text-on-surface-variant">${t('payTo')} Kuya's Grill</p><p class="font-display text-display-m font-bold tabular-nums">${peso(c.amt)}</p></div>
+  <p class="text-center text-body-m text-on-surface-variant">${t('yourCap')}: <span class="font-semibold text-on-surface tabular-nums">${peso(200)}</span></p>
+  <div class="mt-auto mb-4 grid grid-cols-2 gap-3">${btn(c, 'outlined', t('cancel'), { go: 'pos-keypad', size: 'l', full: true })}${btn(c, 'filled', t('confirm'), { go: 'pos-pin', size: 'l', full: true })}</div>
+  <p class="-mt-2 mb-4 text-center text-body-s text-on-surface-variant">${t('notYou')}</p></div>`);
+};
+function pinPad(c) {
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'];
+  return `<div class="flex justify-center gap-5 py-2" aria-live="polite">${[0, 1, 2, 3].map(() => `<span data-dot class="h-4 w-4 rounded-full border-2 border-on-surface"></span>`).join('')}</div>
+  <div class="grid grid-cols-3 gap-2">${keys.map((x) => x ? `<button data-pin="${x}" aria-label="${x === 'backspace' ? 'Delete' : 'Digit ' + x}" class="sl relative h-16 rounded-[${R(c, 'card')}] bg-surface-container-high font-display text-headline-s font-medium">${x === 'backspace' ? ic('backspace') : x}</button>` : '<span></span>').join('')}</div>`;
+}
+SCR['pos-pin'] = (c) => {
+  const t = c.t;
+  return app(c, `${posBar(c, t('enterPin'), { back: 'pos-confirm' })}<div class="flex flex-1 flex-col gap-4 px-4 py-5">
+  <p class="text-center text-body-l text-on-surface-variant">Juan D., <span class="font-semibold text-on-surface tabular-nums">${peso(c.amt)}</span> to Kuya's Grill</p>${pinPad(c)}
+  <p class="text-center text-body-s text-on-surface-variant">${t('typeAny')}</p><div class="mb-4 flex justify-center">${btn(c, 'text', t('wrongDemo'), { go: 'pos-dialog' })}</div></div>`);
+};
+SCR['pos-dialog'] = (c) => {
+  const t = c.t;
+  return app(c, `${posBar(c, t('enterPin'), { back: 'pos-confirm' })}<div class="flex flex-1 flex-col gap-4 px-4 py-5">
+  <p class="text-center text-body-l text-on-surface-variant">Juan D., ${peso(c.amt)} to Kuya's Grill</p>${pinPad(c)}</div>
+  ${dialog(c, { icon: 'lock', title: t('dlgPinT'), body: t('dlgPin'), actions: btn(c, 'text', t('cancel'), { go: 'pos-keypad' }) + btn(c, 'text', t('tryAgain'), { go: 'pos-pin' }) })}`);
+};
+SCR['pos-approved'] = (c) => {
+  const t = c.t;
+  const body = `<div class="mx-auto w-full max-w-[340px]">${slip(c, { status: 'pending', big: true })}</div><p class="text-center text-title-m font-semibold">${t('scanThis')}</p>`;
+  return app(c, `${posBar(c, t('approved'), { back: 'pos-keypad' })}<div class="flex flex-1 flex-col gap-4 px-4 py-5">${body}
+  <p class="text-center text-body-m text-on-surface-variant">${t('pendingNote')} ${t('noPhone')}</p>
+  <div class="mt-auto space-y-3 pb-4">${progress()}<p class="text-center text-body-s text-on-surface-variant">${t('autoNext')}</p>${btn(c, 'filled', t('nextSale'), { go: 'pos-keypad', size: 'l', full: true })}${btn(c, 'text', 'Switch to the student phone', { go: 'me-scan', full: true, icon: 'smartphone' })}</div></div>`);
+};
+SCR['pos-today'] = (c) => {
+  const t = c.t;
+  const hrs = [['7a', 2], ['8a', 4], ['9a', 6], ['10a', 9], ['11a', 16], ['12p', 18], ['1p', 14], ['2p', 6], ['3p', 4], ['4p', 5]];
+  const rows = [['10:41', 85, 'Juan D.', 'pending'], ['10:30', 40, 'Ana R.', 'settled'], ['10:12', 25, 'Mark T.', 'failed'], ['09:50', 85, 'Liza M.', 'settled']];
+  return app(c, `${posBar(c, t('today'))}<div class="flex flex-1 flex-col gap-5 px-4 py-5">
+  <div class="flex items-end justify-between"><div><p class="font-display text-display-s font-bold tabular-nums">${peso(1240)}</p><p class="text-body-m text-on-surface-variant">18 ${t('salesN')}</p></div>${sample(c)}</div>
+  ${card(c, `<h2 class="text-title-s font-semibold">${t('busy')}</h2><div class="mt-3 flex h-28 items-end gap-1.5" role="img" aria-label="Sales by hour, peak at 12 PM with 18 sales">${hrs.map(([h, v]) => `<div class="flex flex-1 flex-col items-center gap-1"><div class="w-full rounded-t-[4px] ${v >= 14 ? 'bg-primary' : 'bg-outline-variant'}" style="height:${Math.round((v / 18) * 88)}px"></div><span class="text-label-s text-on-surface-variant">${h}</span></div>`).join('')}</div><p class="mt-3 text-body-m font-semibold">${t('prep')}</p>`)}
+  <div class="-mx-4 divide-y divide-outline-variant">${rows.map(([ti, a, n, s]) => listItem(c, { head: `${n}, <span class="tabular-nums">${peso(a)}</span>`, sup: ti, trail: statusChip(c, s) })).join('')}</div></div>${navBar(c, POS_NAV, 'today')}`, { nav: true });
+};
+SCR['pos-queue'] = (c) => {
+  const t = c.t;
+  const q = [['7c1e9a40', 85, 'Juan D.', '10:41'], ['5be0c1d2', 25, 'Paolo S.', '10:20'], ['a91f2e77', 40, 'Ana R.', '10:05']];
+  return app(c, `${posBar(c, t('queue'))}<div class="flex flex-1 flex-col gap-4 px-4 py-5">
+  <div class="flex items-center gap-3 rounded-[${R(c, 'card')}] bg-warning-container p-4 text-on-warning-container">${ic('cloud_off')}<div class="flex-1"><p class="text-title-s font-semibold">3 ${t('waitingN')}</p><p class="text-body-s">${t('lastTry')}</p></div>${btn(c, 'filled', t('push'), { icon: 'sync' })}</div>
+  <div class="-mx-4 divide-y divide-outline-variant">${q.map(([id, a, n, ti]) => listItem(c, { lead: avatar(c, 'receipt_long', 'tertiary'), head: `${n}, <span class="tabular-nums">${peso(a)}</span>`, sup: `<span class="font-mono">${id}</span>, ${ti}`, trail: statusChip(c, 'pending') })).join('')}</div>
+  <p class="text-body-s text-on-surface-variant">${sample(c)} The student’s phone may settle these first; the contract skips any receipt it already settled.</p></div>${navBar(c, POS_NAV, 'queue')}`, { nav: true });
+};
+SCR['me-intro'] = (c) => {
+  const t = c.t;
+  const pages = [['intro1t', 'intro1', 'badge'], ['intro2t', 'intro2', 'cloud_off'], ['intro3t', 'intro3', 'qr_code_scanner']];
+  const art = (i, icn) => i === 2 ? `<div class="mx-auto w-full max-w-[280px]">${slip(c, { status: 'pending' })}</div>` : `<div class="mx-auto grid h-48 w-48 place-items-center rounded-full bg-secondary-container text-on-secondary-container">${ic(icn, '!text-[88px]')}</div>`;
+  return app(c, `<div class="flex items-center justify-between px-2 pt-2">${langToggle(c)}${btn(c, 'text', t('skip'), { go: 'me-login' })}</div>
+  ${pages.map(([h, p, icn], i) => `<div data-page="${i}" ${i ? 'hidden' : ''} class="flex flex-1 flex-col gap-8 px-6 pb-4 pt-6">${art(i, icn)}<div class="space-y-3"><h1 class="font-display text-headline-m font-semibold text-balance">${t(h)}</h1><p class="max-w-[36ch] text-body-l text-on-surface-variant">${t(p)}</p></div></div>`).join('')}
+  <div class="flex items-center justify-between gap-4 px-6 pb-6"><div class="flex gap-2" aria-hidden="true">${[0, 1, 2].map((i) => `<span data-pager="${i}" class="h-2 rounded-full ${i ? 'w-2 bg-outline-variant' : 'w-6 bg-primary'}"></span>`).join('')}</div>
+  <span data-intro-next>${btn(c, 'filled', t('introNext'), { size: 'l' })}</span><span data-intro-start hidden>${btn(c, 'filled', t('introStart'), { go: 'me-login', size: 'l' })}</span></div>`);
+};
+SCR['me-login'] = (c) => {
+  const t = c.t;
+  return app(c, `${topBar(c, '', { back: 'me-intro', actions: langToggle(c) })}<div class="flex flex-1 flex-col gap-4 px-4 py-4">${wordmark(c, true)}
+  <h2 class="font-display text-headline-m font-semibold text-balance">${t('loginT')}</h2>
+  ${field(c, 'lno', t('studentNo'), 'K12345678')}${field(c, 'lpin', t('pin'), '1234', { type: 'password', mode: 'numeric' })}
+  <label class="flex items-start gap-3 py-1 text-body-m" for="consent-login"><input id="consent-login" type="checkbox" checked class="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--primary)]"><span>${t('consentLogin')} <a href="#" data-legal="privacy" class="font-semibold text-primary underline underline-offset-4">${t('privacy')}</a></span></label>
+  <div class="mt-auto mb-4 space-y-2">${btn(c, 'filled', t('login'), { go: 'me-home', size: 'l', full: true })}<p class="text-center text-body-s text-on-surface-variant">${t('loginHint')}</p></div></div>`);
+};
+function receiptRows(c, settled) {
+  const rows = [["Kuya's Grill", -85, settled ? 'settled' : 'pending', 'Today 10:41', settled ? 'me-settled' : 'me-receipt', 'restaurant'], ['Cashier top-up', 500, 'settled', 'Today 09:58', 'me-settled', 'add_card']];
+  return rows.map(([n, a, s, ti, go, icn]) => listItem(c, { go, lead: avatar(c, icn, a > 0 ? 'success' : 'secondary'), head: n, sup: ti, trail: `<span class="flex flex-col items-end gap-1"><span class="text-title-m font-semibold tabular-nums ${a > 0 ? 'text-success' : ''}">${a > 0 ? '+' : '−'}${peso(Math.abs(a))}</span>${statusChip(c, s)}</span>` })).join('');
+}
+function meHome(c, settled) {
+  const t = c.t;
+  const hero = `<div class="px-4 pt-4">${card(c, `<p class="text-label-l text-on-surface-variant">${t('available')}</p><p class="font-display text-display-m font-semibold tabular-nums">${peso(415)}</p><p class="mt-1 font-mono text-body-m text-on-surface-variant">${peso(settled ? 415 : 500)} ${t('onChain')}, ${peso(settled ? 0 : 85)} ${t('pendingW')}</p>`)}</div>`;
+  return app(c, `${topBar(c, t('hi'), { actions: netChip(c, settled) })}${hero}
+  <div class="flex-1 pb-28 pt-4"><div class="flex items-center justify-between px-4 pb-1"><h2 class="font-display text-title-s font-semibold text-on-surface-variant">${t('recent')}</h2>${sample(c)}</div><div class="divide-y divide-outline-variant">${receiptRows(c, settled)}</div></div>
+  ${fab(c, 'qr_code_scanner', t('scanReceipt'), 'me-scan')}${navBar(c, ME_NAV, 'home')}`, { nav: true });
+}
+SCR['me-home'] = (c) => meHome(c, false);
+SCR['me-scan'] = (c) => {
+  const t = c.t;
+  return app(c, `${topBar(c, t('scanReceipt'), { back: 'me-home', actions: netChip(c, false) })}<div class="flex flex-1 flex-col gap-5 px-4 py-6">
+  <div class="relative aspect-square w-full overflow-hidden rounded-[${R(c, 'card')}] bg-surface-container-highest"><div class="absolute inset-0 grid place-items-center text-body-m text-on-surface-variant">Camera view</div><div class="absolute inset-[18%] rounded-[16px] border-[3px] border-primary"></div><span class="scan-bar absolute inset-x-[18%] h-0.5 bg-primary"></span></div>
+  <p class="text-center text-body-l text-on-surface-variant">${t('camera')}</p><div class="mt-auto mb-4">${btn(c, 'filled', t('simScan'), { go: 'me-receipt', size: 'l', full: true })}</div></div>`);
+};
+function receiptScreen(c, settled) {
+  const t = c.t, s = settled ? 'settled' : 'pending';
+  const top = `<div class="mx-auto w-full max-w-[340px] ${settled ? 'stamp-in' : ''}">${slip(c, { status: s })}</div><div class="flex justify-center">${statusChip(c, s)}</div>`;
+  return app(c, `${topBar(c, t('receiptT'), { back: 'me-activity', actions: netChip(c, settled) })}<div class="flex flex-1 flex-col gap-4 px-4 py-5 pb-28">${top}
+  <dl class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-2 text-body-m"><dt class="text-on-surface-variant">Receipt id</dt><dd class="break-all font-mono">7c1e9a40-55b2-4d1f</dd><dt class="text-on-surface-variant">From</dt><dd class="break-all font-mono">0x7Ae3…c219 (you)</dd><dt class="text-on-surface-variant">To</dt><dd class="break-all font-mono">0x51D0…3b8e, Kuya's Grill</dd>${settled ? `<dt class="text-on-surface-variant">Transaction</dt><dd class="break-all font-mono">0x41d0b7…77e2</dd>` : ''}</dl>
+  ${settled ? `<p class="text-body-m text-on-surface-variant">${t('settledNote')}</p><a href="https://amoy.polygonscan.com/" target="_blank" rel="noopener" class="sl relative inline-flex h-14 w-full items-center justify-center gap-2 rounded-full border border-outline text-title-m font-semibold text-primary">${t('viewExplorer')} ${ic('open_in_new', '!text-[20px]')}</a>`
+    : `<p class="text-body-m text-on-surface-variant">${t('waitingSignal')}</p>${btn(c, 'filled', t('simOnline'), { go: 'me-settled', size: 'l', full: true, icon: 'cloud_done' })}`}
+  <p class="text-body-s text-on-surface-variant">${sample(c)} Addresses and transaction are samples until the contract is deployed.</p></div>
+  ${settled ? snackbar(c, t('snack'), t('view'), 'me-settled') : ''}${navBar(c, ME_NAV, 'activity')}`, { nav: true });
+}
+SCR['me-receipt'] = (c) => receiptScreen(c, false);
+SCR['me-settled'] = (c) => receiptScreen(c, true);
+SCR['me-activity'] = (c) => {
+  const t = c.t;
+  const rows = [["Kuya's Grill", -85, 'pending', 'Today 10:41', 'me-receipt', 'restaurant'], ['Cashier top-up', 500, 'settled', 'Today 09:58', 'me-settled', 'add_card'], ["Ate's Drinks", -25, 'failed', 'Yesterday 15:12', 'states', 'local_cafe'], ['Library Café', -60, 'settled', 'Yesterday 12:30', 'me-settled', 'restaurant']];
+  return app(c, `${topBar(c, t('activity'), { actions: iconBtn('search', 'Search') })}<div class="flex gap-2 overflow-x-auto px-4 py-3" role="group" aria-label="Filter">${[['all', 1], ['pending'], ['settled'], ['failed']].map(([k, sel]) => chip(c, t(k), !!sel)).join('')}</div>
+  <div class="flex items-center justify-between px-4 pb-1"><h2 class="font-display text-title-s font-semibold text-on-surface-variant">Nov 2026</h2>${sample(c)}</div>
+  <div class="flex-1 divide-y divide-outline-variant pb-28">${rows.map(([n, a, s, ti, go, icn]) => listItem(c, { go, lead: avatar(c, icn, a > 0 ? 'success' : s === 'failed' ? 'error' : 'secondary'), head: n, sup: ti, trail: `<span class="flex flex-col items-end gap-1"><span class="text-title-m font-semibold tabular-nums ${a > 0 ? 'text-success' : ''}">${a > 0 ? '+' : '−'}${peso(Math.abs(a))}</span>${statusChip(c, s)}</span>` })).join('')}</div>
+  ${fab(c, 'qr_code_scanner', t('scanReceipt'), 'me-scan')}${navBar(c, ME_NAV, 'activity')}`, { nav: true });
+};
+SCR['me-assistant'] = (c) => {
+  const t = c.t;
+  return app(c, `${topBar(c, t('assistant'), { actions: netChip(c, true) })}<div class="flex flex-1 flex-col gap-4 px-4 py-4">
+  <p class="text-body-s text-on-surface-variant">${t('asNote')} <a href="#" data-legal="privacy" class="font-semibold text-primary underline underline-offset-4">${t('privacy')}</a></p>
+  <div class="flex flex-wrap gap-2">${[t('q1'), 'Food this week?', 'Biggest expense?'].map((q, i) => chip(c, q, false)).join('')}</div>
+  <div class="flex flex-col gap-3"><p class="max-w-[85%] self-end rounded-[20px] rounded-br-[6px] bg-secondary-container px-4 py-2.5 text-body-l text-on-secondary-container">${t('q1')}</p><div class="flex max-w-[92%] gap-3">${avatar(c, 'smart_toy', 'tertiary')}<p class="rounded-[20px] rounded-tl-[6px] bg-surface-container-high px-4 py-3 text-body-l">${t('a1')}</p></div></div>
+  <div class="mt-auto flex items-center gap-2 pb-2"><label for="ask" class="sr-only">${t('ask')}</label><input id="ask" placeholder="${t('ask')}" class="h-14 min-w-0 flex-1 rounded-full bg-surface-container-highest px-5 text-body-l text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary">${iconBtn('send', 'Send', '', 'bg-cta text-on-cta !h-14 !w-14')}</div></div>${navBar(c, ME_NAV, 'assistant')}`, { nav: true });
+};
+SCR['me-profile'] = (c) => {
+  const t = c.t;
+  const items = [['language', t('language'), 'English, Filipino', langToggle(c)], ['password', t('changePin'), 'Needs signal', ic('chevron_right', 'text-on-surface-variant')], ['speed', t('offlineCapMe'), '₱200 at stalls with no signal, set by AI', ''], ['policy', t('privacy'), 'What we collect and why', ic('chevron_right', 'text-on-surface-variant')], ['folder_shared', t('dataReq'), 'See, correct or delete your data', ic('chevron_right', 'text-on-surface-variant')]];
+  return app(c, `${topBar(c, t('profile'))}<div class="flex flex-1 flex-col pb-4">
+  <div class="flex items-center gap-4 px-4 py-5"><span class="grid h-14 w-14 place-items-center rounded-full bg-secondary-container font-display text-title-l font-bold text-on-secondary-container">JD</span><div><p class="text-title-l font-semibold">Juan Dela Cruz</p><p class="font-mono text-body-m text-on-surface-variant">K12345678, ID …5E:80</p></div></div>
+  <div class="divide-y divide-outline-variant">${items.map(([icn, h, s, tr], i) => listItem(c, { lead: avatar(c, icn), head: h, sup: s, trail: tr, go: i === 3 ? null : null })).join('')}</div>
+  <div class="mt-6 px-4">${btn(c, 'outlined', t('logout'), { icon: 'logout', full: true })}</div><p class="mt-3 px-4 text-body-s text-on-surface-variant">${t('testnet')}</p></div>${navBar(c, ME_NAV, 'profile')}`, { nav: true });
+};
+SCR.ops = (c) => {
+  const t = c.t;
+  const wrap = 'mx-auto w-full max-w-[1760px] px-4 medium:px-6 large:px-8';
+  const stalls = [["Kuya's Grill", true, 0, '10:44'], ["Ate's Drinks", false, 3, '10:20'], ['Siomai House', true, 0, '10:45'], ['Library Café', false, 1, '09:58']];
+  const live = [['10:46:10', 85, 'Juan D.', "Kuya's Grill", 'settled', 'second copy skipped'], ['10:44:52', 85, 'Juan D.', "Kuya's Grill", 'settled', '0x41d0…77e2'], ['10:41:51', 85, 'Juan D.', "Ate's Drinks", 'flagged', 'clone suspect'], ['10:30:02', 40, 'Ana R.', "Kuya's Grill", 'settled', '0x9c11…3af0'], ['10:12:40', 25, 'Mark T.', "Ate's Drinks", 'failed', 'INSUFFICIENT']];
+  const caps = [['Juan D.', 0, 'Flagged: two stalls 44 s apart', 'error'], ['Ana R.', 250, 'Steady top-ups, no failed payments', 'success'], ['Mark T.', 120, 'One failed payment this week', 'warning'], ['Liza M.', 200, 'New student, default limit', 'secondary']];
+  const flag = `<div class="rounded-[${R(c, 'card')}] bg-error-container text-on-error-container p-5"><div class="flex items-center gap-2">${ic('flag', '', true)}<h2 class="font-display text-title-l font-bold">Clone suspect</h2></div><p class="mt-2 font-mono text-body-m">ID …5E:80, Juan D.</p><p class="mt-1 text-body-l">Kuya's Grill 10:41:07, then Ate's Drinks 10:41:51. 44 seconds apart.</p><p class="mt-3 font-display text-title-l font-semibold tabular-nums">Offline limit ${peso(200)} → ${peso(0)}</p></div>`;
+  return `<div class="min-h-screen">${topBar(c, 'HeronPay Ops', { actions: `<span class="hidden text-body-m medium:inline">Polygon Amoy, relayer gas <span class="font-mono">0.42 POL</span></span>${netChip(c, true)}` })}
+  <main class="${wrap} grid gap-6 py-6 large:grid-cols-[380px_minmax(0,1fr)] xlarge:grid-cols-[440px_minmax(0,1fr)]">
+   <section class="min-w-0 space-y-4">${flag}
+    ${card(c, `<div class="flex items-center justify-between"><h2 class="font-display text-title-m font-semibold">Stalls</h2>${sample(c)}</div><ul class="mt-3 divide-y divide-outline-variant">${stalls.map(([n, on, qn, sync]) => `<li class="flex items-center justify-between gap-3 py-3"><div class="min-w-0"><p class="text-title-s font-semibold">${n}</p><p class="text-body-s text-on-surface-variant">Last sync ${sync}${qn ? `, ${qn} waiting` : ''}</p></div>${netChip(c, on)}</li>`).join('')}</ul>`)}
+    ${card(c, `<h2 class="font-display text-title-m font-semibold">Today</h2><dl class="mt-3 grid grid-cols-3 gap-3">${[['Settled', '42'], ['Pesos', '₱3,860'], ['Failed', '1']].map(([l, v]) => `<div><dt class="text-body-s text-on-surface-variant">${l}</dt><dd class="font-display text-headline-s font-semibold tabular-nums">${v}</dd></div>`).join('')}</dl>`)}</section>
+   <section class="min-w-0 space-y-4"><h2 class="font-display text-title-l font-semibold">Live receipts</h2>
+    <div class="overflow-x-auto rounded-[${R(c, 'card')}] bg-surface-container-low"><table class="w-full min-w-[640px] text-left text-body-m"><thead class="text-label-l text-on-surface-variant"><tr><th class="px-4 py-3 font-semibold">Time</th><th class="px-4 py-3 font-semibold">Amount</th><th class="px-4 py-3 font-semibold">Student</th><th class="px-4 py-3 font-semibold">Stall</th><th class="px-4 py-3 font-semibold">Status</th><th class="px-4 py-3 font-semibold">Detail</th></tr></thead>
+    <tbody class="divide-y divide-outline-variant">${live.map(([ti, a, f, s, st2, d2]) => `<tr><td class="px-4 py-3 font-mono text-on-surface-variant">${ti}</td><td class="px-4 py-3 font-semibold tabular-nums">${peso(a)}</td><td class="px-4 py-3">${f}</td><td class="px-4 py-3">${s}</td><td class="px-4 py-3">${statusChip(c, st2)}</td><td class="px-4 py-3 font-mono text-body-s text-on-surface-variant">${d2}</td></tr>`).join('')}</tbody></table></div>
+    <h2 class="font-display text-title-l font-semibold">Offline limits set by AI</h2>
+    <ul class="grid gap-3 expanded:grid-cols-2">${caps.map(([n, v, why, col]) => `<li class="flex items-center justify-between gap-4 rounded-[${R(c, 'card')}] bg-surface-container-low p-4"><div class="min-w-0"><p class="text-title-s font-semibold">${n}</p><p class="text-body-m text-on-surface-variant">${why}</p></div><p class="font-display text-headline-s font-semibold tabular-nums text-${col}">${peso(v).replace('.00', '')}</p></li>`).join('')}</ul></section></main></div>`;
+};
+SCR.states = (c) => {
+  const t = c.t;
+  const dlg = (icn, h, p, a) => `<div class="rounded-[${R(c, 'dialog')}] bg-surface-container-high p-6"><span class="text-secondary">${ic(icn)}</span><h3 class="mt-3 font-display text-headline-s font-semibold">${h}</h3><p class="mt-3 text-body-m text-on-surface-variant">${p}</p><div class="mt-4 flex justify-end gap-2">${a.map((x) => btn(c, 'text', x)).join('')}</div></div>`;
+  const banner = (tone, icn, h, p) => `<div class="flex gap-3 rounded-[${R(c, 'card')}] bg-${tone}-container p-4 text-on-${tone}-container">${ic(icn)}<div><p class="text-title-s font-semibold">${h}</p><p class="text-body-m">${p}</p></div></div>`;
+  const empty = (icn, h, p) => `<div class="flex flex-col items-center gap-2 rounded-[${R(c, 'card')}] border border-dashed border-outline-variant p-6 text-center"><span class="text-on-surface-variant">${ic(icn, '!text-[40px]')}</span><p class="text-title-m font-semibold">${h}</p><p class="max-w-[32ch] text-body-m text-on-surface-variant">${p}</p></div>`;
+  const sec = (h, inner) => `<section class="space-y-3"><h2 class="font-display text-title-m font-semibold text-on-surface-variant">${h}</h2>${inner}</section>`;
+  return app(c, `${topBar(c, 'States', { back: 'app' })}<div class="space-y-8 px-4 py-5">
+  ${sec('POS dialogs (over the PIN screen)', [dlg('lock', t('dlgPinT'), t('dlgPin'), [t('cancel'), t('tryAgain')]), dlg('speed', 'Over the offline limit', 'This ID can spend up to ₱120 with no signal. Charge ₱120 or less, or connect to check the full balance.', [t('cancel'), 'Change amount']), dlg('account_balance_wallet', 'Not enough balance', 'Balance after pending payments: ₱30.00.', [t('cancel'), 'Change amount']), dlg('flag', 'Offline payments paused for this ID', 'This ID was used at two stalls minutes apart. Pay online or see the cashier.', ['OK']), dlg('badge', 'This ID is not linked yet', 'Send the student to the cashier to link it.', ['OK'])].join(''))}
+  ${sec('Banners', [banner('warning', 'nfc', 'NFC is off', 'Turn on NFC in Android settings and open this page in Chrome.'), banner('warning', 'sync_problem', 'Student list not synced', 'Connect once to sync. Charging is off until then.'), banner('error', 'cancel', 'Failed: not enough balance at settlement', 'Another stall used the same pesos first. Nothing was taken from you for this receipt.'), banner('tertiary', 'schedule', 'Pending, waiting for signal', 'Saved on this phone. It settles the moment you are online.'), banner('warning', 'cloud_off', 'The assistant needs signal', 'Your receipts are saved. Ask again when you are online.')].join(''))}
+  ${sec('Empty states', [empty('receipt_long', 'No payments yet', 'After you pay at a stall, scan the receipt QR.'), empty('cloud_done', 'All settled', 'No receipts waiting for signal.')].join(''))}</div>`);
+};
+
+/* ===================== FRAME DOCUMENT ===================== */
+const ICONS = ['account_balance_wallet', 'account_circle', 'add_card', 'arrow_back', 'backspace', 'badge', 'bluetooth', 'cancel', 'check', 'check_circle', 'chevron_right', 'close', 'cloud_done', 'cloud_off', 'contactless', 'flag', 'folder_shared', 'home', 'insights', 'language', 'local_cafe', 'lock', 'logout', 'monitoring', 'nfc', 'open_in_new', 'password', 'payments', 'person', 'person_search', 'point_of_sale', 'policy', 'qr_code_scanner', 'receipt_long', 'restaurant', 'schedule', 'school', 'search', 'send', 'shield', 'smart_toy', 'smartphone', 'speed', 'storefront', 'sync', 'sync_problem', 'tune', 'undo', 'verified', 'wallet'].sort();
+function tokenCSS(d) {
+  const D = DIRS[d];
+  const set = (o) => Object.entries(o).map(([k2, v]) => `--${k2}:${v};`).join('');
+  return `html[data-theme="dark"]{${set(D.scheme.dark)}--shadow-3:0 1px 3px rgba(0,0,0,.45),0 4px 10px 3px rgba(0,0,0,.3);color-scheme:dark}
+  html[data-theme="light"]{${set(D.scheme.light)}--shadow-3:0 1px 3px rgba(0,0,0,.18),0 4px 10px 3px rgba(0,0,0,.1);color-scheme:light}`;
+}
+const TW_COLORS = ['primary', 'on-primary', 'primary-container', 'on-primary-container', 'secondary', 'on-secondary', 'secondary-container', 'on-secondary-container', 'tertiary', 'on-tertiary', 'tertiary-container', 'on-tertiary-container', 'error', 'on-error', 'error-container', 'on-error-container', 'success', 'on-success', 'success-container', 'on-success-container', 'warning', 'on-warning', 'warning-container', 'on-warning-container', 'surface', 'on-surface', 'on-surface-variant', 'surface-container-lowest', 'surface-container-low', 'surface-container', 'surface-container-high', 'surface-container-highest', 'outline', 'outline-variant', 'inverse-surface', 'inverse-on-surface', 'inverse-primary', 'scrim', 'cta', 'on-cta', 'paper', 'on-paper', 'paper-muted'];
+const TW_CONFIG = `tailwind.config={theme:{screens:{medium:'600px',expanded:'840px',large:'1200px',xlarge:'1600px',wide:'1920px'},extend:{colors:${JSON.stringify(Object.fromEntries(TW_COLORS.map((k2) => [k2, `var(--${k2})`])))},fontFamily:{display:['Sora','Manrope','system-ui','sans-serif'],sans:['Manrope','system-ui','sans-serif'],mono:['JetBrains Mono','ui-monospace','Consolas','monospace']},fontSize:{'display-l':['3.5625rem',{lineHeight:'4rem',letterSpacing:'-0.016rem'}],'display-m':['2.8125rem',{lineHeight:'3.25rem'}],'display-s':['2.25rem',{lineHeight:'2.75rem'}],'headline-l':['2rem',{lineHeight:'2.5rem'}],'headline-m':['1.75rem',{lineHeight:'2.25rem'}],'headline-s':['1.5rem',{lineHeight:'2rem'}],'title-l':['1.375rem',{lineHeight:'1.75rem'}],'title-m':['1rem',{lineHeight:'1.5rem',letterSpacing:'0.009rem'}],'title-s':['0.875rem',{lineHeight:'1.25rem',letterSpacing:'0.006rem'}],'body-l':['1rem',{lineHeight:'1.5rem',letterSpacing:'0.031rem'}],'body-m':['0.875rem',{lineHeight:'1.25rem',letterSpacing:'0.016rem'}],'body-s':['0.75rem',{lineHeight:'1rem',letterSpacing:'0.025rem'}],'label-l':['0.875rem',{lineHeight:'1.25rem',letterSpacing:'0.006rem'}],'label-m':['0.75rem',{lineHeight:'1rem',letterSpacing:'0.031rem'}],'label-s':['0.6875rem',{lineHeight:'1rem',letterSpacing:'0.031rem'}]},boxShadow:{3:'var(--shadow-3)'}}}}`;
+const BASE_CSS = `
+body{background:var(--surface);color:var(--on-surface);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{text-wrap:balance}
+::selection{background:var(--primary);color:var(--on-primary)}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;width:1em;overflow:hidden;flex:none;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.ms.fill{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.sl{isolation:isolate;overflow:hidden}
+.sl::after{content:"";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .2s cubic-bezier(.2,0,0,1);pointer-events:none;border-radius:inherit}
+.sl:hover::after{opacity:.08}.sl:active::after{opacity:.12}
+.scrim{background:color-mix(in srgb,var(--scrim) 45%,transparent)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.bar-tone{transition:background-color .2s linear}
+.slip{-webkit-mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x;mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x}
+.stamp{position:absolute;right:16px;bottom:30px;transform:rotate(-9deg);border:3px solid currentColor;border-radius:6px;padding:4px 10px;font:700 18px/1.1 Sora,sans-serif;letter-spacing:.08em;text-align:center;background:color-mix(in srgb,var(--paper) 70%,transparent)}
+.stamp small{display:block;font:600 11px/1.2 'JetBrains Mono',monospace;letter-spacing:.02em}
+.stamp-ok{color:var(--stamp)}.stamp-pend{color:var(--stamp-pending)}
+.slip-wrap{filter:drop-shadow(0 1px 1px rgba(0,0,0,.18)) drop-shadow(0 4px 10px rgba(0,0,0,.12))}
+.print-in{animation:print .4s cubic-bezier(.05,.7,.1,1) both}
+.stamp-in .stamp{animation:stamp .2s cubic-bezier(.2,0,0,1) both}
+.nfc-ring{animation:ring 1.6s ease-out infinite}
+.scan-bar{top:0;animation:sweep 1.2s linear infinite alternate}
+.countdown{width:100%;animation:count 20s linear both}
+.snack{animation:snack .3s cubic-bezier(.05,.7,.1,1) both}
+@keyframes print{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes stamp{from{transform:rotate(-9deg) scale(1.6);opacity:0}to{transform:rotate(-9deg) scale(1);opacity:1}}
+@keyframes ring{0%{transform:scale(.88);opacity:.9}100%{transform:scale(1.22);opacity:0}}
+@keyframes sweep{to{top:calc(100% - 4px)}}
+@keyframes count{to{width:0}}
+@keyframes snack{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.legal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px}
+`;
+const FRAME_JS = `
+function post(m){parent.postMessage(Object.assign({umak:1,fid:FID},m),'*')}
+let amt=AMT;const fmt=v=>'\\u20b1'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+function showAmt(){document.querySelectorAll('[data-amt]').forEach(e=>e.textContent=fmt(amt))}
+let pins=0,demo=0,page=0;
+function openLegal(key){const L=LEGAL[key];if(!L)return;const o=document.getElementById('legal');o.querySelector('h2').textContent=L[0];o.querySelector('ul').innerHTML=L[1].map(x=>'<li>'+x+'</li>').join('');o.hidden=false;o.querySelector('[data-close]').focus()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=document.getElementById('legal');if(o)o.hidden=true}});
+document.addEventListener('click',e=>{
+  const l=e.target.closest('[data-legal]');if(l){e.preventDefault();openLegal(l.dataset.legal);return}
+  if(e.target.closest('[data-close]')||e.target.id==='legal'){document.getElementById('legal').hidden=true;return}
+  const lg=e.target.closest('[data-lang]');if(lg){post({lang:lg.dataset.lang});return}
+  const dn=e.target.closest('[data-demo-next]');if(dn){demo=(demo+1)%4;document.querySelectorAll('[data-demo-show]').forEach(x=>x.hidden=+x.dataset.demoShow!==demo);document.querySelectorAll('[data-demo-pip]').forEach(x=>{const on=+x.dataset.demoPip<=demo;x.classList.toggle('bg-primary',on);x.classList.toggle('bg-surface-container-highest',!on)});return}
+  const inx=e.target.closest('[data-intro-next]');if(inx){page=Math.min(2,page+1);document.querySelectorAll('[data-page]').forEach(x=>x.hidden=+x.dataset.page!==page);document.querySelectorAll('[data-pager]').forEach(x=>{const on=+x.dataset.pager===page;x.className='h-2 rounded-full '+(on?'w-6 bg-primary':'w-2 bg-outline-variant')});if(page===2){inx.hidden=true;document.querySelector('[data-intro-start]').hidden=false}return}
+  const q=e.target.closest('[data-quick]');if(q){amt=q.dataset.quick;showAmt();return}
+  const k=e.target.closest('[data-key]');if(k){const x=k.dataset.key;if(x==='C')amt='0';else if(x==='backspace')amt=amt.slice(0,-1)||'0';else amt=(amt==='0'?'':amt)+x;if(amt.length>5)amt=amt.slice(0,5);showAmt();return}
+  const p=e.target.closest('[data-pin]');if(p){const dots=document.querySelectorAll('[data-dot]');if(p.dataset.pin==='backspace'){pins=Math.max(0,pins-1)}else{pins=Math.min(4,pins+1)}dots.forEach((d,i)=>d.style.background=i<pins?'var(--on-surface)':'transparent');if(pins===4)setTimeout(()=>post({go:'pos-approved'}),250);return}
+  const g=e.target.closest('[data-go]');if(g){e.preventDefault();const m={go:g.dataset.go};if(g.hasAttribute('data-charge'))m.amt=amt;post(m);return}
+  const a=e.target.closest('a[href^="#"]');if(a){e.preventDefault();const id=a.getAttribute('href');const t=id.length>1?document.querySelector(id):null;if(t)t.scrollIntoView()}
+});
+function rep(){post({h:document.documentElement.scrollHeight})}
+window.addEventListener('load',()=>{rep();setTimeout(rep,300);setTimeout(rep,1200);setTimeout(rep,2500)});
+`;
+function frameDoc(o) {
+  const c = { d: o.dir, lang: o.lang, amt: o.amt, t: (key) => (S[o.lang] && S[o.lang][key]) || S.en[key] || key };
+  const body = SCR[o.screen](c);
+  const legal = `<div id="legal" class="legal scrim" hidden role="dialog" aria-modal="true" aria-labelledby="lg-h"><div class="max-h-[80vh] w-full max-w-[560px] overflow-auto rounded-[${DIRS[o.dir].shape.dialog}] bg-surface-container-high p-6 shadow-3"><div class="flex items-start justify-between gap-4"><h2 id="lg-h" class="font-display text-headline-s font-semibold"></h2><button data-close class="grid h-12 w-12 shrink-0 place-items-center rounded-full" aria-label="Close">${ic('close')}</button></div><ul class="mt-2 list-disc space-y-2 pl-5 text-body-m text-on-surface-variant"></ul><p class="mt-4 text-body-s text-on-surface-variant">Outline only. Full text is owed before launch.</p></div></div>`;
+  return `<!doctype html><html lang="${o.lang === 'fil' ? 'fil' : 'en'}" data-theme="${o.theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=${ICONS.join(',')}&display=block">
+<script src="https://cdn.tailwindcss.com/3.4.17"><\/script>
+<script>${TW_CONFIG}<\/script>
+<style>${tokenCSS(o.dir)}${BASE_CSS}</style></head>
+<body data-dir="${o.dir}">${body}${legal}
+<script>const FID=${JSON.stringify(o.fid)};const AMT=${JSON.stringify(String(o.amt))};const LEGAL=${JSON.stringify(LEGAL)};${FRAME_JS}<\/script></body></html>`;
+}
+
+/* ===================== SHELL ===================== */
+const frames = {}; let fc = 0;
+function seg(id, opts, key) {
+  const el = document.getElementById(id);
+  el.innerHTML = opts.map(([v, lab]) => `<button type="button" data-v="${v}" aria-pressed="${String(st[key]) === String(v)}">${lab}</button>`).join('');
+  el.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const v = b.dataset.v; st[key] = isNaN(+v) ? v : +v; save(); renderAll(); };
+}
+function controls() {
+  if (!['screens', 'flow', 'tokens'].includes(st.view)) st.view = 'screens';
+  st.dir = 'A';
+  seg('c-view', [['screens', 'Screens'], ['flow', 'Flow'], ['tokens', 'Tokens + spec']], 'view');
+  seg('c-theme', [['dark', 'Dark'], ['light', 'Light']], 'theme');
+  seg('c-lang', [['en', 'EN'], ['fil', 'FIL']], 'lang');
+  const widths = [[390, '390 phone'], [768, '768'], [1280, '1280 laptop'], [1920, '1920'], [2560, '2560 (1440p)']];
+  if (st.view === 'screens') widths.push(['all', 'All widths']);
+  if (st.view !== 'screens' && st.width === 'all') st.width = 390;
+  seg('c-width', widths, 'width');
+  seg('c-scale', [['fit', 'Fit'], ['1:1', '1:1 true size']], 'scale');
+  document.getElementById('w-width').hidden = st.view === 'flow' || st.view === 'tokens';
+  document.getElementById('w-scale').hidden = st.view === 'flow' || st.view === 'tokens';
+}
+function sidebar() {
+  let html = '', g = '';
+  for (const s2 of SCREENS) { if (s2.g !== g) { g = s2.g; html += `<h4>${g}</h4>`; } html += `<button class="scr" data-s="${s2.id}" aria-current="${st.screen === s2.id}">${s2.label}${s2.n ? '<span class="new">NEW</span>' : ''}</button>`; }
+  const side = document.getElementById('side'); side.innerHTML = html;
+  side.onclick = (e) => { const b = e.target.closest('[data-s]'); if (!b) return; st.screen = b.dataset.s; if (st.view === 'flow' || st.view === 'tokens') st.view = 'screens'; save(); renderAll(); };
+}
+function makeFrame(dir, width, avail) {
+  const sc = SCREENS.find((x) => x.id === st.screen);
+  const fid = 'f' + (++fc);
+  const s = st.scale === '1:1' ? 1 : Math.min(1, avail / width);
+  const minH = VIEWPORT_H[width];
+  const wrap = document.createElement('div'); wrap.className = 'frame';
+  wrap.innerHTML = `<div class="frame-cap"><b>${DIRS[dir].name}</b><span>${sc.label}</span><span>${width} px, ${s === 1 ? '1:1' : 'shown at ' + Math.round(s * 100) + '%'}</span></div><div class="frame-scroll"><div class="clip" style="width:${Math.round(width * s)}px;height:${Math.round(minH * s)}px"><iframe title="${DIRS[dir].name}, ${sc.label}, ${width} px" style="width:${width}px;height:${minH}px;transform:scale(${s})"></iframe></div></div>`;
+  const iframe = wrap.querySelector('iframe');
+  iframe.srcdoc = frameDoc({ dir, theme: st.theme, lang: st.lang, screen: st.screen, fid, amt: st.amt });
+  frames[fid] = { iframe, clip: wrap.querySelector('.clip'), s, minH };
+  return wrap;
+}
+function renderScreens(cv) {
+  const W = cv.clientWidth - 44;
+  const head = document.createElement('div');
+  head.innerHTML = `<div class="mobile-pick"><label for="mp">Screen</label><select id="mp">${SCREENS.map((s2) => `<option value="${s2.id}" ${s2.id === st.screen ? 'selected' : ''}>${s2.g}: ${s2.label}</option>`).join('')}</select></div>
+  <div class="note"><span>Direction A (Receipt), the build reference. Material 3 components and roles, Sora + Manrope, Material Symbols icons, Impeccable fixes. Buttons inside the mocks walk the flow; the landing demo, intro pager, keypad and PIN pad work.</span><span><b>Sample</b> data and placeholders are labeled. FIL copy is a draft for native review. UMak gold and blue hex values are placeholders until the team confirms them.</span></div>`;
+  cv.appendChild(head);
+  const mp = head.querySelector('#mp'); if (mp) mp.onchange = () => { st.screen = mp.value; save(); renderAll(); };
+  {
+    const dc = document.createElement('div'); dc.className = 'dirs';
+    dc.innerHTML = Object.values(DIRS).map((d) => `<div class="dircard"><h3>${d.name}</h3><p>${d.blurb}</p><p>${d.move}</p></div>`).join('');
+    cv.appendChild(dc);
+  }
+  const box = document.createElement('div'); box.className = 'frames'; cv.appendChild(box);
+  {
+    const list = st.width === 'all' ? [390, 768, 1280, 1920, 2560] : [st.width];
+    for (const w of list) box.appendChild(makeFrame(st.dir, w, W));
+  }
+}
+const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+function renderFlow(cv) {
+  const n = (id, cls = '') => { const s2 = SCREENS.find((x) => x.id === id); return `<button class="fnode ${cls}" data-s="${id}">${s2.label}<small>${id}</small></button>`; };
+  const e = (lab) => `<span class="edge">${lab}${ARROW}</span>`;
+  cv.innerHTML = `<div class="note"><span>Click any screen to open it in the comparison. Dashed = entry, bold border = goal.</span></div><div class="flow">
+   <div class="lane"><h3>Entry</h3><div class="lane-row">${n('landing', 'entry')}${e('Open app')}${n('app')}${e('pick a role')}</div></div>
+   <div class="lane"><h3>Cashier (Android phone + MetaMask app)</h3><div class="lane-row">${n('cashier-tap')}${e('unlinked ID')}${n('cashier-link')}${e('Save')}${n('cashier-load')}${e('Mint in MetaMask')}${n('cashier-done')}</div><div class="lane-row">${n('cashier-tap')}${e('card won’t read')}${n('cashier-lookup')}${e('Select')}${n('cashier-load')}</div></div>
+   <div class="lane"><h3>Stall /pos (offline). Nav bar: Charge, Today, Queue</h3><div class="lane-row">${n('pos-keypad')}${e('Charge')}${n('pos-tap')}${e('ID read')}${n('pos-confirm')}${e('Confirm')}${n('pos-pin')}${e('PIN ok, within limit')}${n('pos-approved')}${e('scan or 20 s')}${n('pos-keypad')}</div><div class="lane-row">${n('pos-pin')}${e('wrong PIN, over limit, flagged')}${n('pos-dialog')}</div><div class="lane-row">${n('pos-today')}${n('pos-queue')}</div></div>
+   <div class="lane"><h3>Student /me. Nav bar: Home, Activity, Assistant, Profile. FAB: Scan receipt</h3><div class="lane-row">${n('me-intro')}${e('Get started')}${n('me-login')}${e('Log in')}${n('me-home')}${e('Scan FAB')}${n('me-scan')}${e('QR scanned')}${n('me-receipt')}${e('phone online')}${n('me-settled', 'goal')}</div><div class="lane-row">${n('me-activity')}${n('me-assistant')}${n('me-profile')}</div></div>
+   <div class="lane"><h3>Ops (projector)</h3><div class="lane-row">${n('ops')}${e('same ID at a 2nd stall')}<span class="edge">flag fires, limit drops to 0</span></div></div>
+   <div class="lane"><h3>States</h3><div class="lane-row">${n('states')}</div></div></div>`;
+  cv.onclick = (ev) => { const b = ev.target.closest('[data-s]'); if (!b) return; st.screen = b.dataset.s; st.view = 'screens'; save(); renderAll(); };
+}
+function renderTokens(cv) {
+  const D = DIRS[st.dir];
+  const keys = Object.keys(D.scheme.dark);
+  const sw = `<div class="sw-wrap"><div class="sw"><span class="hd">dk</span><span class="hd">lt</span><span class="hd">M3 role</span><span class="hd">dark</span><span class="hd">light</span>${keys.map((k2) => `<i style="background:${D.scheme.dark[k2]}"></i><i style="background:${D.scheme.light[k2] || 'transparent'}"></i><span>--${k2}</span><code>${D.scheme.dark[k2]}</code><code>${D.scheme.light[k2] || ''}</code>`).join('')}</div></div>`;
+  const rows = [...SPEC_COMMON, ...SPEC_DIR[st.dir]];
+  cv.innerHTML = `<div class="note"><span>Tokens for <b style="color:var(--s-fg)">${D.name}</b>. Switch directions in the bar. The pick becomes docs/standards/design-brief.md and Impeccable's DESIGN.md.</span></div>
+  <div class="tok-grid"><div class="tok"><h3>Color (M3 roles, plus success, warning, cta${D.dark.paper ? ', paper, stamp' : ''})</h3>${sw}</div>
+   <div class="tok"><h3>Type, shape, depth</h3><dl class="kv"><dt>Fonts</dt><dd>Sora 500 to 800 for display, headline and title roles. Manrope 400 to 800 for body and label roles. JetBrains Mono 400 to 600 for data only.</dd><dt>Icons</dt><dd>Material Symbols Rounded, weight 400, optical size 24, fill 1 for active and status.</dd><dt>Shape</dt><dd>card ${D.shape.card}, button ${D.shape.btn}, FAB ${D.shape.fab}, chip ${D.shape.chip}, dialog ${D.shape.dialog}, text field top corners ${D.shape.field}</dd><dt>Elevation</dt><dd>Tonal surfaces (surface-container low to highest). Shadow only on FAB, snackbar, dialog, ID card: level 3.</dd><dt>Density</dt><dd>${D.density}</dd><dt>State layers</dt><dd>hover 8%, pressed 12% of the content colour</dd><dt>Tailwind</dt><dd>3.4.17 with M3 screens (medium 600, expanded 840, large 1200, xlarge 1600, wide 1920), M3 type roles as font sizes (text-title-l, text-body-m, ...), colours as CSS variables.</dd><dt>Sources</dt><dd>M3 values follow the Material 3 spec at m3.material.io (components, type scale, shape, motion). The site would not render for an automated fetch here, so the numbers are from the published spec as I know it; check them against the live page before the build.</dd></dl></div></div>
+  <div class="spec-wrap"><table class="spec"><thead><tr><th>Spec, ${D.name}</th>${SPEC_COLS.map((x) => `<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => r[2] === '' ? `<tr><th>${r[0]}</th><td colspan="5">${r[1]}</td></tr>` : `<tr><th>${r[0]}</th>${r.slice(1).map((x) => `<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function renderAll() {
+  controls(); sidebar();
+  for (const k2 in frames) delete frames[k2];
+  const cv = document.getElementById('canvas'); cv.innerHTML = ''; cv.onclick = null;
+  if (st.view === 'flow') renderFlow(cv); else if (st.view === 'tokens') renderTokens(cv); else renderScreens(cv);
+}
+window.addEventListener('message', (e) => {
+  const m = e.data; if (!m || !m.umak) return;
+  const f = frames[m.fid];
+  if (m.h && f) { const H = Math.max(f.minH, m.h); f.iframe.style.height = H + 'px'; f.clip.style.height = Math.round(H * f.s) + 'px'; }
+  if (m.go) { if (m.amt) st.amt = m.amt; st.screen = m.go; save(); renderAll(); }
+  if (m.lang) { st.lang = m.lang; save(); renderAll(); }
+});
+let rt; let lastW = window.innerWidth;
+window.addEventListener('resize', () => { if (Math.abs(window.innerWidth - lastW) < 40) return; lastW = window.innerWidth; clearTimeout(rt); rt = setTimeout(renderAll, 300); });
+renderAll();
+</script>

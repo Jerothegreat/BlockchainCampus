@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HeronPay viewports</title>
+<style>
+  /* Shows the running build at 390 to 3440 px, scaled down, so wide screens can be checked from a laptop. */
+  :root { color-scheme: light dark; --bg: #f3f4f7; --fg: #12161f; --muted: #586074; --line: #d5d9e2; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0c0f15; --fg: #e8ecf4; --muted: #9aa3b6; --line: #283041; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  input { flex: 1; min-width: 220px; padding: 6px 8px; font: inherit; }
+  main { display: flex; flex-wrap: wrap; gap: 20px; padding: 16px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .clip { overflow: hidden; border: 1px solid var(--line); border-radius: 6px; }
+  iframe { border: 0; transform-origin: 0 0; display: block; }
+</style>
+</head>
+<body>
+<header>
+  <label for="url">Build URL</label>
+  <input id="url" value="http://localhost:5173/me">
+  <label><input type="checkbox" id="real"> 1:1</label>
+</header>
+<main id="frames"></main>
+<script>
+  const SIZES = [[390, 844], [768, 1024], [1280, 800], [1920, 1080], [2560, 1440], [3440, 1440]];
+  const COLUMN = 420;
+  function render() {
+    const url = document.getElementById('url').value;
+    const real = document.getElementById('real').checked;
+    document.getElementById('frames').innerHTML = SIZES.map(([w, h]) => {
+      const s = real ? 1 : Math.min(1, COLUMN / w);
+      return `<figure><figcaption>${w} x ${h}${s < 1 ? `, shown at ${Math.round(s * 100)}%` : ''}</figcaption><div class="clip" style="width:${w * s}px;height:${h * s}px"><iframe src="${url}" style="width:${w}px;height:${h}px;transform:scale(${s})" title="${w} px"></iframe></div></figure>`;
+    }).join('');
+  }
+  document.getElementById('url').addEventListener('change', render);
+  document.getElementById('real').addEventListener('change', render);
+  render();
+</script>
+</body>
+</html>
