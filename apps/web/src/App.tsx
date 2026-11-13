@@ -13,7 +13,7 @@ export default function App() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md bg-slate-50 p-4 text-slate-900">
-      <h1 className="text-xl font-bold">UMak Pay · ID chip check</h1>
+      <h1 className="text-xl font-bold">HeronPay · ID chip check</h1>
       <p className="mt-1 text-sm text-slate-600">Tap a student ID on the back of the phone.</p>
 
       {!isSupported && (
