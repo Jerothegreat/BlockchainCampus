@@ -12,6 +12,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { anvil, bscTestnet } from "viem/chains";
+import { log } from "./log.js";
 import { config } from "./config.js";
 
 const chain = config.chainId === anvil.id ? anvil : bscTestnet;
@@ -103,8 +104,10 @@ export function settle(payments: Payment[]): Promise<Map<string, Outcome>> {
       args: [payments.map((p) => ({ id: toChainId(p.id), cardId: p.cardId, to: p.to, amount: p.amount }))],
       ...txFees,
     });
+    log.info("chain", `settleBatch tx sent ${hash}, waiting for confirmation…`);
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") throw new Error(`settleBatch reverted: ${hash}`);
+    log.info("chain", `settleBatch confirmed in block ${receipt.blockNumber}, gas used ${receipt.gasUsed}`);
 
     const outcomes = new Map<string, Outcome>(payments.map((p) => [p.id, { status: "duplicate", txHash: hash }]));
     for (const log of parseEventLogs({ abi, logs: receipt.logs })) {

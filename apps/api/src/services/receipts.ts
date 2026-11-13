@@ -3,6 +3,7 @@ import { explorerTx, settle, type Payment } from "../chain.js";
 import { config } from "../config.js";
 import { db } from "../db.js";
 import { verifyReceipt } from "../receipt.js";
+import { log, peso, shortCard, shortId, shortTx } from "../log.js";
 import { blockCard, findMerchantByAddress, findStudentByUid, uidHashOfCardId } from "./directory.js";
 
 export type ReceiptRow = {
@@ -58,15 +59,24 @@ export const toResult = (row: ReceiptRow): ReceiptResult => ({
   explorer: row.tx_hash ? explorerTx(row.tx_hash as Hex) : undefined,
 });
 
-const reject = (id: string, reason: string): ReceiptResult => ({ id, status: "rejected", reason });
+const reject = (id: string, reason: string): ReceiptResult => {
+  log.warn("pay", `receipt ${shortId(id)} REJECTED: ${reason}`);
+  return { id, status: "rejected", reason };
+};
 
 /** Sends one settleBatch for pending receipts and records each outcome. Throws on chain failure. */
 export async function settleAndRecord(payments: Payment[]): Promise<ReceiptResult[]> {
   if (payments.length === 0) return [];
+  const total = payments.reduce((sum, p) => sum + p.amount, 0n);
+  log.info("chain", `settleBatch: sending ${payments.length} payment(s), ${peso(total)} total`);
   const outcomes = await settle(payments);
   const now = Date.now();
   return [...outcomes].map(([id, o]) => {
     const status = o.status === "failed" ? "failed" : "settled"; // duplicate = settled earlier on-chain
+    const amount = payments.find((p) => p.id === id)?.amount ?? 0n;
+    if (o.status === "settled") log.info("pay", `receipt ${shortId(id)} ${peso(amount)} SETTLED on-chain, tx ${shortTx(o.txHash)} ${explorerTx(o.txHash) ?? ""}`);
+    if (o.status === "duplicate") log.info("pay", `receipt ${shortId(id)} ${peso(amount)} was already settled on-chain (skipped by the contract)`);
+    if (o.status === "failed") log.warn("pay", `receipt ${shortId(id)} ${peso(amount)} FAILED on-chain: ${o.reason}, tx ${shortTx(o.txHash)}`);
     updateStmt.run(status, o.status === "failed" ? o.reason : null, o.txHash, now, id);
     return toResult(getReceipt(id)!);
   });
@@ -85,7 +95,11 @@ const toPayment = (row: ReceiptRow): Payment => ({
  * STALE_CARD_STATE / DOUBLE_SPEND (card rolled back → card gets blocked).
  * Returns chainError=true when settleBatch failed; those receipts stay pending for a retry.
  */
-export async function submitReceipts(receipts: ReceiptIn[]): Promise<{ results: ReceiptResult[]; chainError: boolean }> {
+export async function submitReceipts(
+  receipts: ReceiptIn[],
+  via: "settle" | "refresh" = "settle",
+): Promise<{ results: ReceiptResult[]; chainError: boolean }> {
+  log.info("pay", `${receipts.length} receipt(s) in via ${via === "settle" ? "/settle (stall queue push)" : "/cards/refresh (card tap)"}`);
   const results = new Map<string, ReceiptResult>();
   const toSend: Payment[] = [];
 
@@ -96,6 +110,10 @@ export async function submitReceipts(receipts: ReceiptIn[]): Promise<{ results: 
     const cardId = `0x${uidHash}` as Hex;
     const student = findStudentByUid(uidHash);
     const merchant = findMerchantByAddress(to);
+    log.info(
+      "pay",
+      `receipt ${shortId(r.id)} ${peso(r.amount)} ${student?.name ?? "unknown card"} → ${merchant?.name ?? "unknown stall"} (card ${shortCard(cardId)}, nonce ${r.cardNonce})`,
+    );
     if (!student || !merchant) {
       results.set(r.id, reject(r.id, "UNKNOWN_PARTY"));
       continue;
@@ -123,6 +141,7 @@ export async function submitReceipts(receipts: ReceiptIn[]): Promise<{ results: 
       // on the same state, means the card's record was copied back (rollback / clone).
       if (r.cardNonce < student.card_nonce || sameNonceStmt.get(cardId, r.cardNonce, r.id)) {
         blockCard(uidHash);
+        log.warn("fraud", `card ${shortCard(cardId)} (${student.name}) BLOCKED: rolled-back or copied card record (nonce ${r.cardNonce}, latest ${student.card_nonce})`);
         results.set(r.id, reject(r.id, r.cardNonce < student.card_nonce ? "STALE_CARD_STATE" : "DOUBLE_SPEND"));
         continue;
       }
@@ -136,6 +155,9 @@ export async function submitReceipts(receipts: ReceiptIn[]): Promise<{ results: 
         cardNonce: r.cardNonce,
         sig: r.sig as Hex | undefined,
       });
+      log.info("pay", `receipt ${shortId(r.id)} accepted: signature ok, recorded as pending`);
+    } else {
+      log.info("pay", `receipt ${shortId(r.id)} already recorded (${row.status})`);
     }
 
     if (row.card_id !== cardId || row.to_addr !== to || row.amount !== r.amount) {
@@ -153,7 +175,9 @@ export async function submitReceipts(receipts: ReceiptIn[]): Promise<{ results: 
 /** Retries any receipts of this card that are recorded but not yet on-chain. */
 export async function settlePendingOfCard(cardId: Hex): Promise<{ results: ReceiptResult[]; chainError: boolean }> {
   const results = new Map<string, ReceiptResult>();
-  const chainError = await settleOrKeepPending(pendingReceiptsOfCard(cardId).map(toPayment), results);
+  const queued = pendingReceiptsOfCard(cardId);
+  if (queued.length) log.info("pay", `card ${shortCard(cardId)}: ${queued.length} queued receipt(s) still pending, settling`);
+  const chainError = await settleOrKeepPending(queued.map(toPayment), results);
   return { results: [...results.values()], chainError };
 }
 
@@ -162,7 +186,7 @@ async function settleOrKeepPending(payments: Payment[], results: Map<string, Rec
     for (const result of await settleAndRecord(payments)) results.set(result.id, result);
     return false;
   } catch (err) {
-    console.error("settleBatch failed; receipts left pending", err);
+    log.error("chain", `settleBatch failed; ${payments.length} receipt(s) left pending for a retry`, err);
     return true;
   }
 }

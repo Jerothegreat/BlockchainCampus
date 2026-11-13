@@ -2,6 +2,7 @@ import type { Address, Hex } from "viem";
 import { decodeCard, issueCardState, verifyCardState, type CardRecord } from "../cardstate.js";
 import { balanceOf, explorerTx, topUp } from "../chain.js";
 import { cardIdOf, findStudentByUid, saveCardNonce, uidHashOf, type StudentRow } from "./directory.js";
+import { log, peso, shortCard, shortId } from "../log.js";
 import { pendingReceiptsOfCard, settlePendingOfCard, submitReceipts, type ReceiptResult } from "./receipts.js";
 
 /**
@@ -49,6 +50,7 @@ async function issueNext(t: Tapped) {
   const balance = Number(await balanceOf(t.student.address as Address));
   const card = await issueCardState(t.cardId, balance, nonce);
   saveCardNonce(t.uidHash, nonce);
+  log.info("card", `card ${shortCard(t.cardId)} (${t.student.name}): new clear record issued, balance ${peso(balance)}, nonce ${nonce}; phone writes it to the card`);
   return { card, balance, nonce };
 }
 
@@ -60,12 +62,17 @@ export function refreshCard(uid: string, cardHex: string) {
   return withCardLock(uidHashOf(uid), async () => {
     const t = await readTappedCard(uid, cardHex);
     const settled: ReceiptResult[] = [];
+    log.info(
+      "card",
+      `card ${shortCard(t.cardId)} (${t.student.name}) tapped online: ${t.record.pending ? `pending payment ${shortId(t.record.pending.id)} ${peso(t.record.pending.amount)} on the card` : "no payment on the card"}`,
+    );
 
     if (t.record.pending) {
       const p = t.record.pending;
-      const { results, chainError } = await submitReceipts([
-        { id: p.id, cardId: t.cardId, to: p.to, amount: p.amount, createdAt: p.createdAt, cardNonce: t.record.state.nonce, sig: p.sig },
-      ]);
+      const { results, chainError } = await submitReceipts(
+        [{ id: p.id, cardId: t.cardId, to: p.to, amount: p.amount, createdAt: p.createdAt, cardNonce: t.record.state.nonce, sig: p.sig }],
+        "refresh",
+      );
       settled.push(...results);
       if (chainError) throw new CardError(502, "CHAIN_UNAVAILABLE");
     }
@@ -75,7 +82,10 @@ export function refreshCard(uid: string, cardHex: string) {
 
     // Re-read: a rollback detected while settling blocks the card.
     const student = findStudentByUid(t.uidHash)!;
-    if (student.blocked) throw new CardError(403, "CARD_BLOCKED");
+    if (student.blocked) {
+      log.warn("card", `card ${shortCard(t.cardId)} (${student.name}) is blocked: no new record issued`);
+      throw new CardError(403, "CARD_BLOCKED");
+    }
     return { ...(await issueNext({ ...t, student })), settled };
   });
 }
