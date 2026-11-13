@@ -25,9 +25,9 @@ const fund = process.argv.includes("--fund");
 
 const STALLS = ["Canteen", "Kape Kiosk", "Bookstore", "Print Shop"];
 const STUDENTS = [
-  { uid: "de:00:00:01", studentNo: "DEMO-0001", name: "Ana Reyes", pin: "1234" },
-  { uid: "de:00:00:02", studentNo: "DEMO-0002", name: "Ben Cruz", pin: "1234" },
-  { uid: "de:00:00:03", studentNo: "DEMO-0003", name: "Carla Santos", pin: "1234" },
+  { uid: "de:00:00:01", studentNo: "DEMO-0001", name: "Ana Reyes", pin: "123456" },
+  { uid: "de:00:00:02", studentNo: "DEMO-0002", name: "Ben Cruz", pin: "123456" },
+  { uid: "de:00:00:03", studentNo: "DEMO-0003", name: "Carla Santos", pin: "123456" },
 ];
 const TOP_UP = 20000; // ₱200
 const PAYMENTS: [stall: string, centavos: number, minutesAgo: number][] = [
@@ -42,7 +42,7 @@ for (const name of STALLS) stalls.push(findMerchantByName(name) ?? (await create
 console.log("Stalls:");
 for (const s of stalls) console.log(`  ${s.name.padEnd(12)} id=${s.id} address=${s.address} device=${s.device_address ?? "(not registered)"}`);
 
-console.log("Demo cards (PIN 1234; virtual cards, no physical record is written):");
+console.log("Demo cards (PIN 123456; virtual cards, no physical record is written):");
 const students = [];
 for (const s of STUDENTS) {
   const uidHash = uidHashOf(s.uid);

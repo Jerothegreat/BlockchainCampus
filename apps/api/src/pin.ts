@@ -1,7 +1,7 @@
 import { pbkdf2Sync, randomBytes } from "node:crypto";
 
 /**
- * PIN verifier the POS checks OFFLINE, so it must ship to the device. A 4–6 digit PIN can
+ * PIN verifier the POS checks OFFLINE, so it must ship to the device. A 6-digit PIN can
  * never be made uncrackable there; PBKDF2 with a per-student salt makes each guess cost
  * ~100k SHA-256 rounds and kills precomputed tables. /sync is also restricted to registered
  * POS devices so the verifiers don't leak publicly.

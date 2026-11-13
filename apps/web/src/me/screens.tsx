@@ -7,7 +7,7 @@ import { ApiError, api, errorText, type HistoryItem, type ReceiptResult } from '
 import { decodeCard } from '../lib/card'
 import { addressUrl, NETWORK, txUrl } from '../lib/chain'
 import { clock } from '../lib/hooks'
-import { pesos } from '../lib/pay'
+import { isPin, pesos } from '../lib/pay'
 import type { CardTap } from '../hooks/useCard'
 import { AppColumn, Avatar, Banner, Button, Card, Chip, EmptyState, Fab, Icon, List, ListItem, NavBar, NetChip, StatusChip, TextField, TopBar, type NavItem } from '../ui'
 import { CardWriter } from '../ui/CardWriter'
@@ -177,7 +177,7 @@ function RegisterForm({ tap, onSubmit }: { tap: CardTap; onSubmit: (b: { email: 
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
   const emailOk = /^[^@\s]+@umak\.edu\.ph$/i.test(email.trim())
-  const valid = emailOk && studentNo.trim() && /^\d{4,6}$/.test(pin) && pin === pin2
+  const valid = emailOk && studentNo.trim() && isPin(pin) && pin === pin2
   return (
     <form
       className="flex flex-1 flex-col gap-4 py-5"
@@ -193,7 +193,7 @@ function RegisterForm({ tap, onSubmit }: { tap: CardTap; onSubmit: (b: { email: 
       {email && !emailOk && <p className="-mt-2 text-body-s text-error">Use your @umak.edu.ph email.</p>}
       <TextField id="student-no" label="Student number" mono value={studentNo} onChange={(e) => setStudentNo(e.target.value)} />
       <TextField id="name" label="Name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
-      <TextField id="pin" label="PIN for paying (4 to 6 digits)" mono inputMode="numeric" type="password" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+      <TextField id="pin" label="PIN for paying (6 digits)" mono inputMode="numeric" type="password" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
       <TextField id="pin2" label="PIN again" mono inputMode="numeric" type="password" maxLength={6} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
       {pin2 && pin !== pin2 && <p className="-mt-2 text-body-s text-error">The PINs don't match.</p>}
       <div className="mt-auto mb-4">

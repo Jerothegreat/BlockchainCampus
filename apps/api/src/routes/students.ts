@@ -56,7 +56,7 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
             uid: { type: "string", minLength: 4, maxLength: 64 },
             studentNo: { type: "string", minLength: 1, maxLength: 32 },
             name: { type: "string", maxLength: 100 },
-            pin: { type: "string", pattern: "^[0-9]{4,6}$" },
+            pin: { type: "string", pattern: "^[0-9]{6}$" },
           },
         },
       },

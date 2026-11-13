@@ -7,7 +7,7 @@ import { useCard, type CardTap } from '../hooks/useCard'
 import { ApiError, api, errorText, type Student } from '../lib/api'
 import { addressUrl, txUrl } from '../lib/chain'
 import { useOnline } from '../lib/hooks'
-import { pesos } from '../lib/pay'
+import { isPin, pesos } from '../lib/pay'
 import { AppColumn, Banner, Button, Card, Chip, Icon, NetChip, TextField, TopBar } from '../ui'
 import { CardWriter } from '../ui/CardWriter'
 import { DemoCards } from '../ui/DemoCards'
@@ -156,7 +156,7 @@ function LinkForm({ tap, onSubmit }: { tap: CardTap; onSubmit: (b: { studentNo: 
   const [name, setName] = useState('')
   const [pin, setPin] = useState('')
   const [consent, setConsent] = useState(false)
-  const valid = studentNo.trim() && /^\d{4,6}$/.test(pin) && consent
+  const valid = studentNo.trim() && isPin(pin) && consent
   return (
     <form
       className="flex flex-1 flex-col gap-4 py-5"
@@ -171,7 +171,7 @@ function LinkForm({ tap, onSubmit }: { tap: CardTap; onSubmit: (b: { studentNo: 
       </Card>
       <TextField id="student-no" label="Student number" mono value={studentNo} onChange={(e) => setStudentNo(e.target.value)} />
       <TextField id="student-name" label="Name" value={name} onChange={(e) => setName(e.target.value)} />
-      <TextField id="pin" label="PIN (4 to 6 digits)" mono inputMode="numeric" type="password" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+      <TextField id="pin" label="PIN (6 digits)" mono inputMode="numeric" type="password" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
       <label className="flex items-start gap-3 text-body-m text-on-surface-variant">
         <input type="checkbox" className="mt-1 h-5 w-5 accent-[var(--primary)]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         The student agrees to link this ID to a UMak Pay wallet. Payments are public on the testnet explorer.

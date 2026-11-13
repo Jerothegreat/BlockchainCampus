@@ -269,7 +269,7 @@ function DemoStage() {
       {step === 1 && (
         <div className="grid min-h-[340px] place-items-center gap-4">
           <p className="font-display text-headline-s">{pesos(8500)} to Kuya's Grill</p>
-          <div className="flex gap-2" aria-hidden="true">{[0, 1, 2, 3].map((i) => <span key={i} className="h-3 w-3 rounded-full bg-on-surface" />)}</div>
+          <div className="flex gap-2" aria-hidden="true">{[0, 1, 2, 3, 4, 5].map((i) => <span key={i} className="h-3 w-3 rounded-full bg-on-surface" />)}</div>
         </div>
       )}
       {step === 2 && <div className="mx-auto max-w-[320px]"><ReceiptSlip {...slipProps} stamp={{ kind: 'pending' }} /></div>}

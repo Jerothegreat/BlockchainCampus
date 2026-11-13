@@ -34,6 +34,10 @@ export function checkAmount({ amount, record, student }: { amount: number; recor
 const fmt = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 export const pesos = (centavos: number) => '₱' + fmt.format(centavos / 100)
 
+/** Every PIN is exactly 6 digits (API: ^[0-9]{6}$). */
+export const PIN_LENGTH = 6
+export const isPin = (pin: string) => /^\d{6}$/.test(pin)
+
 /** Wrong-PIN lock (placeholder rule, owner to confirm): 3 tries, then 5 minutes. */
 export const PIN_TRIES = 3
 export const PIN_LOCK_MS = 5 * 60_000

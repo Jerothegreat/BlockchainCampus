@@ -7,7 +7,7 @@ import { cachedChainInfo, NETWORK, txUrl } from '../lib/chain'
 import { db, type QueuedReceipt } from '../lib/db'
 import { signReceipt } from '../lib/device'
 import { clock, useLive } from '../lib/hooks'
-import { PIN_LOCK_MS, PIN_TRIES, capOf, checkAmount, pesos, type CheckResult } from '../lib/pay'
+import { PIN_LENGTH, PIN_LOCK_MS, PIN_TRIES, capOf, checkAmount, pesos, type CheckResult } from '../lib/pay'
 import { pinMatches } from '../lib/pin'
 import {
   AppColumn, Avatar, Banner, Button, Card, Chip, Dialog, EmptyState, Icon, Keypad, List, ListItem, NavBar, NetChip,
@@ -343,9 +343,9 @@ export function PosPin() {
 
   const key = (k: string) => {
     if (problem || phase !== 'pin') return
-    const next = k === 'backspace' ? pin.slice(0, -1) : (pin + k).slice(0, 6)
+    const next = k === 'backspace' ? pin.slice(0, -1) : (pin + k).slice(0, PIN_LENGTH)
     setPin(next)
-    if (next.length === 4) setTimeout(() => void submit(next), 150)
+    if (next.length === PIN_LENGTH) setTimeout(() => void submit(next), 150)
   }
 
   if (!t) return <Navigate to="/pos" replace />
@@ -359,8 +359,8 @@ export function PosPin() {
         <p className="text-center text-body-l text-on-surface-variant">
           {firstName(t.student.name)}, <span className="font-semibold text-on-surface tabular-nums">{pesos(amount)}</span> to {pos.merchant?.name}
         </p>
-        <div className="flex justify-center gap-5 py-2" aria-live="polite" aria-label={`${pin.length} of 4 digits`}>
-          {[0, 1, 2, 3].map((i) => (
+        <div className="flex justify-center gap-5 py-2" aria-live="polite" aria-label={`${pin.length} of ${PIN_LENGTH} digits`}>
+          {Array.from({ length: PIN_LENGTH }, (_, i) => (
             <span key={i} className="h-4 w-4 rounded-full border-2 border-on-surface" style={{ background: i < pin.length ? 'var(--on-surface)' : 'transparent' }} />
           ))}
         </div>
