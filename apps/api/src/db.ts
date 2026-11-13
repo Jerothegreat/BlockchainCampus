@@ -34,3 +34,19 @@ db.exec(`
     updated_at  INTEGER NOT NULL
   );
 `);
+
+// Additive migrations for databases created by earlier versions.
+function addColumn(table: string, column: string, definition: string) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!columns.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+addColumn("students", "pin_salt", "TEXT"); // hex, PBKDF2 salt (null = legacy sha256 PIN)
+addColumn("students", "pin_iter", "INTEGER");
+addColumn("merchants", "device_address", "TEXT"); // POS phone's signing key address
+addColumn("receipts", "sig", "TEXT"); // EIP-712 signature from the stall's POS device
+
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS merchants_device ON merchants(device_address);
+  CREATE INDEX IF NOT EXISTS receipts_from ON receipts(from_addr, created_at);
+`);

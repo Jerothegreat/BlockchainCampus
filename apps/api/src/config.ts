@@ -33,5 +33,10 @@ export const config = {
   // Optional: only needed for POST /topup (cashier fallback when MetaMask is unavailable).
   deployerKey: optionalKey("DEPLOYER_PRIVATE_KEY"),
   cashierKey: process.env.CASHIER_KEY,
+  // Receipts must carry an EIP-712 signature from the stall's registered POS device.
+  // Set to "false" only while the POS frontend can't sign yet (re-opens receipt forgery).
+  requireReceiptSig: process.env.REQUIRE_RECEIPT_SIG !== "false",
+  // /sync ships PIN verifiers, so only registered POS devices may fetch it. "false" = open (dev only).
+  requireDeviceSync: process.env.REQUIRE_DEVICE_SYNC !== "false",
   defaultOfflineCap: Number(process.env.DEFAULT_OFFLINE_CAP ?? 10000), // centavos (₱100)
 };

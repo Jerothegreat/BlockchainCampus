@@ -1,44 +1,45 @@
-import { createHash, randomUUID } from "node:crypto";
 import type { FastifyPluginAsync } from "fastify";
-import { generatePrivateKey, privateKeyToAddress } from "viem/accounts";
-import type { Address } from "viem";
-import { requireCashier } from "../auth.js";
-import { balanceOf } from "../chain.js";
-import { config } from "../config.js";
+import { getAddress, type Address } from "viem";
+import { requireCashier, requireDevice } from "../auth.js";
+import { balanceOf, explorerTx } from "../chain.js";
 import { db } from "../db.js";
-
-type StudentRow = {
-  uid_hash: string;
-  student_no: string;
-  name: string;
-  address: string;
-  pin_hash: string;
-  offline_cap: number;
-};
-
-// Must match apps/web/src/lib/uid.ts so the POS can hash offline and get the same values.
-const normalizeUid = (uid: string) => uid.replace(/[^0-9a-f]/gi, "").toLowerCase();
-const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
-
-/**
- * Students never hold keys: the relayer moves funds via settleBatch, so each student
- * (and merchant) just needs a unique address. The generated private key is discarded.
- */
-const newAddress = () => privateKeyToAddress(generatePrivateKey());
-
-const insertStudent = db.prepare(
-  `INSERT INTO students (uid_hash, student_no, name, address, pin_hash, offline_cap, created_at)
-   VALUES (?, ?, ?, ?, ?, ?, ?)`,
-);
-const studentByUid = db.prepare("SELECT * FROM students WHERE uid_hash = ?");
-const allStudents = db.prepare("SELECT * FROM students ORDER BY student_no");
-const insertMerchant = db.prepare("INSERT INTO merchants (id, name, address) VALUES (?, ?, ?)");
-const allMerchants = db.prepare("SELECT id, name, address FROM merchants ORDER BY name");
+import {
+  createStudent,
+  DuplicateError,
+  findStudentByAddress,
+  findStudentByUid,
+  listMerchants,
+  listStudents,
+  merchantView,
+  normalizeUid,
+} from "../services/directory.js";
 
 const uidHashParams = {
   type: "object",
   properties: { uidHash: { type: "string", pattern: "^[0-9a-f]{64}$" } },
 } as const;
+const addressParams = {
+  type: "object",
+  properties: { address: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } },
+} as const;
+
+const receiptsOf = db.prepare(
+  `SELECT r.id, r.to_addr, m.name AS merchant, r.amount, r.status, r.reason, r.tx_hash, r.created_at
+   FROM receipts r LEFT JOIN merchants m ON m.address = r.to_addr
+   WHERE r.from_addr = ? ORDER BY r.created_at DESC LIMIT ?`,
+);
+const pendingTotalOf = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM receipts WHERE from_addr = ? AND status = 'pending'");
+
+type HistoryRow = {
+  id: string;
+  to_addr: string;
+  merchant: string | null;
+  amount: number;
+  status: string;
+  reason: string | null;
+  tx_hash: string | null;
+  created_at: number;
+};
 
 const studentsPlugin: FastifyPluginAsync = async (app) => {
   /** Cashier links a tapped ID card to a student and sets their PIN. */
@@ -60,27 +61,13 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
       },
     },
     async (req, reply) => {
-      const uid = normalizeUid(req.body.uid);
-      if (uid.length < 4) return reply.code(400).send({ error: "INVALID_UID" });
-      const uidHash = sha256(uid);
-      const address = newAddress();
+      if (normalizeUid(req.body.uid).length < 4) return reply.code(400).send({ error: "INVALID_UID" });
       try {
-        insertStudent.run(
-          uidHash,
-          req.body.studentNo,
-          req.body.name ?? req.body.studentNo,
-          address,
-          sha256(req.body.pin + uid),
-          config.defaultOfflineCap,
-          Date.now(),
-        );
+        return reply.code(201).send(createStudent(req.body));
       } catch (err) {
-        if ((err as { code?: string }).code === "ERR_SQLITE_ERROR" && String((err as Error).message).includes("UNIQUE")) {
-          return reply.code(409).send({ error: "ALREADY_LINKED" });
-        }
+        if (err instanceof DuplicateError) return reply.code(409).send({ error: err.message });
         throw err;
       }
-      return reply.code(201).send({ uidHash, studentNo: req.body.studentNo, address });
     },
   );
 
@@ -88,23 +75,64 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
     "/students/by-uid/:uidHash",
     { schema: { params: uidHashParams } },
     async (req, reply) => {
-      const row = studentByUid.get(req.params.uidHash) as StudentRow | undefined;
+      const row = findStudentByUid(req.params.uidHash);
       if (!row) return reply.code(404).send({ error: "NOT_FOUND" });
-      const balance = await balanceOf(row.address as Address);
+      const balance = Number(await balanceOf(row.address as Address));
       return {
         uidHash: row.uid_hash,
         studentNo: row.student_no,
         name: row.name,
         address: row.address,
-        balance: Number(balance),
-        offlineCap: Math.min(row.offline_cap, Number(balance)),
+        balance,
+        offlineCap: Math.min(row.offline_cap, balance),
       };
     },
   );
 
-  /** Snapshot the POS caches in IndexedDB for offline checks (balance - pending, offlineCap, PIN). */
-  app.get("/sync", async (req, reply) => {
-    const rows = allStudents.all() as StudentRow[];
+  /** Student phone (/me): balance, unsettled total and payment history, newest first. */
+  app.get<{ Params: { address: string }; Querystring: { limit?: number } }>(
+    "/students/:address/receipts",
+    {
+      schema: {
+        params: addressParams,
+        querystring: { type: "object", properties: { limit: { type: "integer", minimum: 1, maximum: 200, default: 50 } } },
+      },
+    },
+    async (req, reply) => {
+      const address = getAddress(req.params.address);
+      const student = findStudentByAddress(address);
+      if (!student) return reply.code(404).send({ error: "NOT_FOUND" });
+      let balance: number | null = null;
+      try {
+        balance = Number(await balanceOf(address));
+      } catch (err) {
+        req.log.warn({ err }, "balance read failed; returning history without balance");
+      }
+      const rows = receiptsOf.all(address, req.query.limit ?? 50) as HistoryRow[];
+      return {
+        address,
+        studentNo: student.student_no,
+        name: student.name,
+        balance, // null when the chain is unreachable
+        pendingTotal: (pendingTotalOf.get(address) as { total: number }).total,
+        receipts: rows.map((r) => ({
+          id: r.id,
+          to: r.to_addr,
+          merchant: r.merchant,
+          amount: r.amount,
+          status: r.status,
+          reason: r.reason,
+          txHash: r.tx_hash,
+          explorer: r.tx_hash ? explorerTx(r.tx_hash as `0x${string}`) : undefined,
+          createdAt: r.created_at,
+        })),
+      };
+    },
+  );
+
+  /** Snapshot a registered POS device caches for offline checks (balance - pending, offlineCap, PIN). */
+  app.get("/sync", { preHandler: requireDevice }, async (req, reply) => {
+    const rows = listStudents();
     let balances: bigint[];
     try {
       balances = await Promise.all(rows.map((r) => balanceOf(r.address as Address)));
@@ -120,29 +148,14 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
         name: r.name,
         address: r.address,
         pinHash: r.pin_hash,
+        pinSalt: r.pin_salt, // PBKDF2 params, see pin.ts; null = legacy sha256(pin + uid)
+        pinIter: r.pin_iter,
         balance: Number(balances[i]),
         offlineCap: Math.min(r.offline_cap, Number(balances[i])),
       })),
-      merchants: allMerchants.all(),
+      merchants: listMerchants().map(merchantView),
     };
   });
-
-  app.post<{ Body: { name: string } }>(
-    "/merchants",
-    {
-      preHandler: requireCashier,
-      schema: {
-        body: { type: "object", required: ["name"], properties: { name: { type: "string", minLength: 1, maxLength: 100 } } },
-      },
-    },
-    async (req, reply) => {
-      const merchant = { id: randomUUID(), name: req.body.name, address: newAddress() };
-      insertMerchant.run(merchant.id, merchant.name, merchant.address);
-      return reply.code(201).send(merchant);
-    },
-  );
-
-  app.get("/merchants", async () => allMerchants.all());
 };
 
 export default studentsPlugin;

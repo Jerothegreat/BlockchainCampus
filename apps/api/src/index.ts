@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import { signers } from "./chain.js";
 import { config } from "./config.js";
 import topUp from "./routes/topup.js";
+import merchants from "./routes/merchants.js";
 import settle from "./routes/settle.js";
 import students from "./routes/students.js";
 
@@ -12,6 +13,7 @@ await app.register(cors, { origin: config.webOrigins });
 
 app.get("/health", async () => ({ status: "ok", chainId: config.chainId, contract: config.contract, ...signers }));
 await app.register(students);
+await app.register(merchants);
 await app.register(settle);
 await app.register(topUp);
 
