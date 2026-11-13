@@ -1,12 +1,17 @@
-import { Outlet, Route, Routes } from 'react-router'
+import { Navigate, Outlet, Route, Routes } from 'react-router'
+import Cashier from './cashier/Cashier'
 import ChipCheck from './dev/ChipCheck'
 import { PosProvider } from './pos/state'
 import { PosApproved, PosConfirm, PosKeypad, PosPin, PosQueue, PosTap, PosToday } from './pos/screens'
+import { Home, RolePicker } from './RolePicker'
 
-// Routes from PRODUCT.md: /, /app, /cashier, /pos, /me, /ops. Screens not built yet are added as they land.
+// Routes from PRODUCT.md: /, /app, /cashier, /pos, /me. Landing and /ops are not built yet.
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/app" element={<RolePicker />} />
+      <Route path="/cashier" element={<Cashier />} />
       <Route
         path="/pos"
         element={
@@ -24,6 +29,7 @@ export default function App() {
         <Route path="queue" element={<PosQueue />} />
       </Route>
       <Route path="/dev/chip" element={<ChipCheck />} />
+      <Route path="*" element={<Navigate to="/app" replace />} />
     </Routes>
   )
 }
