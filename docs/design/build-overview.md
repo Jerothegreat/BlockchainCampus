@@ -49,7 +49,7 @@ Clone-suspect flag with the limit drop, stall status (online or offline, queue, 
 Dialogs, banners and empty states drawn on the board's States screen.
 
 ## Tools
-React + Vite + TypeScript, Tailwind (M3 tokens as CSS variables, class names from the board), Material Symbols, vite-plugin-pwa, dexie, html5-qrcode, qrcode.react, wagmi + viem, Fastify, better-sqlite3, Solidity in Remix, scikit-learn, an LLM API for the assistant. Impeccable's design hook checks UI files as they are edited.
+React + Vite + TypeScript, Tailwind (M3 tokens as CSS variables, class names from the board), Material Symbols, vite-plugin-pwa, dexie, html5-qrcode, qrcode.react, wagmi + viem, Fastify, Node's built-in `node:sqlite` (no native build on Windows; replaces the PRD's better-sqlite3), Solidity in Remix, scikit-learn, an LLM API for the assistant. Impeccable's design hook checks UI files as they are edited.
 
 ## What the owner still owes
 - UMak school gold hex value (placeholder `#F2C230`).

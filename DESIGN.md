@@ -418,6 +418,7 @@ A cool, low-chroma navy system with exactly two warm voices: gold for action and
 **Display Font:** Sora (with Manrope, system-ui)
 **Body Font:** Manrope (with system-ui)
 **Label/Mono Font:** JetBrains Mono (with ui-monospace, Consolas), data only
+**Icon Font:** Material Symbols Rounded (weight 400, optical size 24, FILL 1 for the active nav item and status chips), self-hosted as a subset for the offline PWA
 
 **Character:** Sora's geometric, slightly wide forms give amounts and titles a confident, printed-sign presence; Manrope keeps running text calm and legible at small sizes; JetBrains Mono is the till printer.
 

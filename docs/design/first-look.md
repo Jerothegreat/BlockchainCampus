@@ -340,6 +340,8 @@ flowchart LR
 | R3.1 | Product renamed **HeronPay**; token **TagakPeso**, symbol **tPHP** |
 | R3.2 | Direction switched to **A. Receipt** (ADR 0002 supersedes ADR 0001). B and C deleted from the board and the export |
 | R3.3 | Handoff prepared: `docs/handoff.md` connects every artifact to direction A |
+| R3.4 | From the build session's design check: a POS phone picks its stall with `/pos?stall=<id>` (remembered on the phone); sub-screens are nested paths (`/pos/tap`, `/pos/confirm`, `/pos/pin`, ...); tokens live on `:root` (dark) and `[data-theme="light"]`; the app uses Tailwind v4 `@theme inline` with only the M3 breakpoints, same class names as the board; the API uses `node:sqlite` |
+| R3.5 | Board fixes from that check: text fields round only the top corners (`rounded-t-[4px]`); the legal dialog's `close` icon is now in the icon subset; the export index is titled for A |
 
 ## Build reference and parity check
 
