@@ -17,7 +17,7 @@ Installable PWA, Android Chrome first (Web NFC needs it). The app screens follow
 
 ## Product Purpose
 
-HeronPay lets students pay at campus stalls by tapping their UMak ID and entering a PIN, even when the stall has no internet. Each payment settles on the Polygon Amoy testnet as soon as the student's phone or the stall's phone comes back online. Success for the hackathon: the full flow (load, pay offline, settle, fraud flag) works live in under 3 minutes.
+HeronPay lets students pay at campus stalls by tapping their UMak ID and entering a PIN, even when the stall has no internet. Each payment settles on BNB Smartchain Test as soon as the student's phone or the stall's phone comes back online. Success for the hackathon: the full flow (load, pay offline, settle, fraud flag) works live in under 3 minutes.
 
 ## Positioning
 
@@ -27,12 +27,12 @@ Pay with the ID you already have, with no signal, and a record no one can alter.
 
 - Routes: `/` landing, `/app` role picker, `/cashier`, `/pos`, `/me`, `/ops` (fraud and AI panel for the projector).
 - Payment: stall enters amount, student taps ID, confirms, enters PIN; the stall shows a receipt QR that the student's phone scans. Either phone settles it when online; the contract skips duplicates.
-- Settlement: Fastify relayer calls `settleBatch()` on the TagakPeso ERC-20 contract (2 decimals = centavos).
+- Settlement: Fastify relayer calls `settleBatch()` on the TagakPeso ERC-20 contract (2 decimals = centavos) on BNB Smartchain Test (chain ID `97`). Transaction links use BscScan Testnet (`https://testnet.bscscan.com`). Local development uses Anvil.
 - Demo: POS and student phones in airplane mode; the same ID tapped at a second stall a minute later triggers the clone flag.
 
 ## Capabilities and Constraints
 
-- Testnet only (Polygon Amoy); TagakPeso (tPHP) has no cash value; no cash-out, no admin panel, no iOS.
+- Testnet only (BNB Smartchain Test); TagakPeso (tPHP) has no cash value; no cash-out, no admin panel, no iOS.
 - Web NFC works only in Chrome on Android, from a user gesture. Nothing is written to the card; the UID (hashed) is the identity.
 - Offline acceptance requires `amount <= balance - pending` and `amount <= offlineCap` (default 200 pesos; AI sets a per-student cap; a flagged ID gets 0).
 - 24-hour build, team of 4.
