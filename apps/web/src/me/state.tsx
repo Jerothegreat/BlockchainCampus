@@ -1,5 +1,5 @@
-// /me state: which student this phone belongs to (remembered after the first tap), their history,
-// and the card reader. The ID itself is the login: tapping it proves the card is here (API rule 3).
+// /me state: the student remembered after tapping their ID and verifying login credentials,
+// their history, and the card reader. Card updates still require a tap and wallet record.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Address } from 'viem'
 import { api, type History } from '../lib/api'

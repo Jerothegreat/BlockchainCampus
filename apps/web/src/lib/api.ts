@@ -34,6 +34,9 @@ export type CardUpdate = { card: CardHex; balance: number; nonce: number }
 export type TopUp = CardUpdate & { txHash: Hex; explorer?: string; ref: string }
 export type Refresh = CardUpdate & { settled: ReceiptResult[] }
 export type HistoryItem = {
+  kind?: 'payment' | 'topup'
+  method?: 'online' | 'cash' | null
+  ref?: string | null
   id: string
   to: Address
   merchant: string | null
@@ -44,7 +47,7 @@ export type HistoryItem = {
   explorer?: string
   createdAt: number
 }
-export type History = { address: Address; studentNo: string; name: string; balance: number | null; pendingTotal: number; receipts: HistoryItem[] }
+export type History = { address: Address; studentNo: string; name: string; balance: number | null; pendingTotal: number; receipts: HistoryItem[]; activity?: HistoryItem[] }
 export type Sale = { id: string; amount: number; status: ReceiptResult['status']; reason: string | null; txHash: string | null; explorer?: string; createdAt: number }
 export type Withdrawal = { id: string; amount: number; ref: string; status: string; txHash: string | null; explorer?: string }
 export type StallMe = Merchant & { balance: number | null; sales: Sale[]; withdrawals: Withdrawal[] }
@@ -113,6 +116,9 @@ export const api = {
   health: () => call<Health>('/health'),
 
   // Students and cards. Every call returning `card` must be written to the card before showing success.
+  lookupCard: (uid: string) => call<{ registered: boolean }>('/cards/lookup', { json: { uid } }),
+  login: (b: { uid: string; email: string; studentNo: string; pin: string; restoreCard?: boolean }) =>
+    call<Pick<Student, 'uidHash' | 'address' | 'name' | 'studentNo'> & Partial<CardUpdate>>('/cards/login', { json: b }),
   register: (b: { email: string; uid: string; studentNo: string; name?: string; pin: string }) => call<Linked>('/cards/register', { json: b }),
   link: (key: string, b: { uid: string; studentNo: string; name?: string; pin: string }) => call<Linked>('/link', { json: b, headers: cashier(key) }),
   topUp: (b: { uid: string; card: CardHex; amount: number }) => call<TopUp>('/cards/topup', { json: b }),
@@ -153,6 +159,7 @@ export function errorText(e: unknown): string {
     INVALID_CARD_RECORD: 'The wallet record on this ID could not be read.',
     FORGED_CARD_RECORD: 'The wallet record on this ID is not genuine.',
     CHAIN_UNAVAILABLE: 'The blockchain did not answer. Nothing changed; try again.',
+    INVALID_CREDENTIALS: 'Email, student number, or PIN does not match this ID. Check your details and try again.',
     ALREADY_LINKED: 'This ID or student number is already registered.',
     EMAIL_ALREADY_REGISTERED: 'This email already has a registered ID.',
     UMAK_EMAIL_REQUIRED: 'Use your @umak.edu.ph email.',

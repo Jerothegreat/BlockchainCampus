@@ -30,6 +30,15 @@ const receiptsOf = db.prepare(
    WHERE r.from_addr = ? ORDER BY r.created_at DESC LIMIT ?`,
 );
 const pendingTotalOf = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM receipts WHERE from_addr = ? AND status = 'pending'");
+const activityOf = db.prepare(`
+  SELECT 'payment' AS kind, r.id AS id, r.to_addr, m.name AS merchant, r.amount,
+    r.status, r.reason, r.tx_hash, r.created_at, NULL AS method, NULL AS ref
+  FROM receipts r LEFT JOIN merchants m ON m.address = r.to_addr WHERE r.from_addr = ?
+  UNION ALL
+  SELECT 'topup', tx_hash, address, NULL, amount, 'settled', NULL, tx_hash, created_at, method, ref
+  FROM topups WHERE address = ?
+  ORDER BY created_at DESC, id DESC LIMIT ?
+`);
 
 type HistoryRow = {
   id: string;
@@ -92,7 +101,7 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
     },
   );
 
-  /** Student phone (/me): balance, unsettled total and payment history, newest first. */
+  /** Student phone (/me): balance, unsettled total and activity, newest first. */
   app.get<{ Params: { address: string }; Querystring: { limit?: number } }>(
     "/students/:address/receipts",
     {
@@ -112,12 +121,29 @@ const studentsPlugin: FastifyPluginAsync = async (app) => {
         req.log.warn({ err }, "balance read failed; returning history without balance");
       }
       const rows = receiptsOf.all(address, req.query.limit ?? 50) as HistoryRow[];
+      const activity = activityOf.all(address, address, req.query.limit ?? 50) as (HistoryRow & {
+        kind: "payment" | "topup"; method: "online" | "cash" | null; ref: string | null;
+      })[];
       return {
         address,
         studentNo: student.student_no,
         name: student.name,
         balance, // null when the chain is unreachable
         pendingTotal: (pendingTotalOf.get(address) as { total: number }).total,
+        activity: activity.map((r) => ({
+          kind: r.kind,
+          id: r.id,
+          to: r.to_addr,
+          merchant: r.merchant,
+          amount: r.amount,
+          status: r.status,
+          reason: r.reason,
+          txHash: r.tx_hash,
+          explorer: r.tx_hash ? explorerTx(r.tx_hash as `0x${string}`) : undefined,
+          createdAt: r.created_at,
+          method: r.method,
+          ref: r.ref,
+        })),
         receipts: rows.map((r) => ({
           id: r.id,
           to: r.to_addr,

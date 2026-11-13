@@ -1,4 +1,5 @@
 import type { Address, Hex } from "viem";
+import { db } from "../db.js";
 import { decodeCard, issueCardState, verifyCardState, type CardRecord } from "../cardstate.js";
 import { balanceOf, explorerTx, topUp } from "../chain.js";
 import { cardIdOf, findStudentByUid, saveCardNonce, uidHashOf, type StudentRow } from "./directory.js";
@@ -45,13 +46,26 @@ async function readTappedCard(uid: string, cardHex: string): Promise<Tapped> {
   return { student, uidHash, cardId, record };
 }
 
-async function issueNext(t: Tapped) {
-  const nonce = Math.max(t.student.card_nonce, t.record.state.nonce) + 1;
+async function issueNext(t: Pick<Tapped, "student" | "uidHash" | "cardId">, cardNonce = t.student.card_nonce) {
+  const nonce = Math.max(t.student.card_nonce, cardNonce) + 1;
   const balance = Number(await balanceOf(t.student.address as Address));
   const card = await issueCardState(t.cardId, balance, nonce);
   saveCardNonce(t.uidHash, nonce);
   log.info("card", `card ${shortCard(t.cardId)} (${t.student.name}): new clear record issued, balance ${peso(balance)}, nonce ${nonce}; phone writes it to the card`);
   return { card, balance, nonce };
+}
+
+/** Credential-verified login can restore a missing record. Never discard queued payments. */
+export function restoreCard(uid: string) {
+  const uidHash = uidHashOf(uid);
+  return withCardLock(uidHash, async () => {
+    const student = findStudentByUid(uidHash);
+    if (!student) throw new CardError(404, "CARD_NOT_LINKED");
+    if (student.blocked) throw new CardError(403, "CARD_BLOCKED");
+    const cardId = cardIdOf(uidHash);
+    if (pendingReceiptsOfCard(cardId).length) throw new CardError(409, "CARD_PENDING");
+    return issueNext({ student, uidHash, cardId });
+  });
 }
 
 /**
@@ -86,7 +100,7 @@ export function refreshCard(uid: string, cardHex: string) {
       log.warn("card", `card ${shortCard(t.cardId)} (${student.name}) is blocked: no new record issued`);
       throw new CardError(403, "CARD_BLOCKED");
     }
-    return { ...(await issueNext({ ...t, student })), settled };
+    return { ...(await issueNext({ ...t, student }, t.record.state.nonce)), settled };
   });
 }
 
@@ -110,6 +124,9 @@ export function topUpCard(uid: string, cardHex: string, amount: number, payment:
       console.error("topUp failed", err);
       throw new CardError(502, "CHAIN_UNAVAILABLE");
     }
-    return { ...(await issueNext(t)), txHash, explorer: explorerTx(txHash), ref };
+    // The mint is confirmed even if the subsequent balance read or card write fails.
+    db.prepare(`INSERT INTO topups (tx_hash, address, amount, method, ref, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)`).run(txHash, t.student.address, amount, payment.method, ref, Date.now());
+    return { ...(await issueNext(t, t.record.state.nonce)), txHash, explorer: explorerTx(txHash), ref };
   });
 }

@@ -20,6 +20,8 @@ The card stores a **signed wallet record** (balance, nonce, optional pending pay
 
 Every endpoint that changes a card returns a new `card` hex. **The phone must write it to the card** (NDEF record, mime `application/x-umakpay`, raw bytes) before telling the user the operation is done. Use NTAG215-class storage; a record is 83 bytes when clear and 200 bytes when pending.
 
+A registered ID with a missing wallet record can restore it through credential-verified `/cards/login` with `restoreCard: true`. This is the exception to requiring an existing signed record: it reads the current balance, advances the nonce under the card lock, and refuses blocked cards or queued payments. The phone must save the restored record before top-up or login completes.
+
 ```
  [CLEAR] ──POS tap (offline OK), PIN ok, amount ≤ balance──► [PENDING]
     ▲   POS appends a signed receipt to the card                 │
@@ -33,12 +35,14 @@ Every endpoint that changes a card returns a new `card` hex. **The phone must wr
 |---|---|---|
 | `GET /health` | any | `{chainId, contract, relayer, deployer, cardSigner}` |
 | `POST /cards/register` `{email, uid, studentNo, name?, pin}` (pin: exactly 6 digits) | **student app** | Self-registration. `email` must end in `@umak.edu.ph` (domain check only, no verification); one card per email. On-chain `linkCard`. 201 `{uidHash, studentNo, address, linkTx, card}`: **write `card`**. If the card is already linked on-chain but unknown to the API (a failed earlier registration), that wallet is reused and `linkTx` is `null`. 403 `UMAK_EMAIL_REQUIRED`, 409 `ALREADY_LINKED` / `EMAIL_ALREADY_REGISTERED`, 429 `RATE_LIMITED` (10 per 10 min per IP) |
+| `POST /cards/lookup` `{uid}` | student app | Returns `{registered}` from the directory, even if the tapped card has no wallet record. No chain calls. |
+| `POST /cards/login` `{uid, email, studentNo, pin, restoreCard?}` | student app | After tapping an ID, verify all three credentials against that ID. Returns `{uidHash, address, name, studentNo}`. If its wallet record is missing, `restoreCard: true` also returns `{card, balance, nonce}` at the current on-chain balance with a fresh nonce; write it to the ID before continuing. Restoration requires valid credentials and refuses queued payments (`CARD_PENDING`) and blocked cards. No funds are minted. 401 `INVALID_CREDENTIALS`, 403 `CARD_BLOCKED`, 429 `RATE_LIMITED` (10 per 10 min per IP). |
 | `POST /link` `{uid, studentNo, name?, pin}` | cashier | Same as register, without email (fallback at the desk) |
-| `POST /cards/topup` `{uid, card, amount}` | student phone | Online top-up (mock payment). Returns `{card, balance, nonce, txHash, explorer, ref}`. |
+| `POST /cards/topup` `{uid, card, amount}` | student phone | Online top-up (mock payment). Returns `{card, balance, nonce, txHash, explorer, ref}`. Confirmed mints are saved to student activity before refreshing the card record. |
 | `POST /cards/topup/cash` `{uid, card, amount, orNumber}` | cashier | Same rules, for cash |
 | `POST /cards/refresh` `{uid, card}` | student phone / online POS | Settles the card's pending payment and any queued ones. Returns `{card, balance, nonce, settled:[…]}` |
 | `GET /students/by-uid/:uidHash` | any | `{uidHash, studentNo, name, address, balance, offlineCap}` |
-| `GET /students/:address/receipts?limit=50` | student phone | `{address, studentNo, name, balance, pendingTotal, receipts:[{id, to, merchant, amount, status, reason, txHash, explorer, createdAt}]}` |
+| `GET /students/:address/receipts?limit=50` | student phone | `{address, studentNo, name, balance, pendingTotal, receipts:[{id, to, merchant, amount, status, reason, txHash, explorer, createdAt}], activity:[...]}`. `receipts` stays payment-only. `activity` combines payments (`kind: "payment"`) and confirmed credits (`kind: "topup"`, `method: "online" \| "cash"`, `ref`, `status: "settled"`), newest first with the limit applied to the combined feed. Top-up IDs are transaction hashes. Older top-ups made before history recording was added are not backfilled. |
 | `GET /merchants` | any | `[{id, name, address, deviceAddress}]` |
 | `POST /merchants` `{name, deviceAddress}` | **anyone (POS phone)** | Stall self-registration, no domain gate. On-chain `addMerchant`. 429 after 5 per hour per IP |
 | `GET /merchants/me` | stall device | Device-auth headers. `{id, name, address, deviceAddress, balance, sales:[…], withdrawals:[…]}` |

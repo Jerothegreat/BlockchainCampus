@@ -10,7 +10,7 @@ import { useNfc } from './useNfc'
 export type CardTap = {
   uid: string // normalized hex
   uidHash: string
-  /** The wallet record read from the card, or null for a blank (never registered) card. */
+  /** Wallet record read from the card; null can also mean a registered ID needs recovery. */
   card: Hex | null
   virtual: boolean
 }

@@ -10,6 +10,7 @@ import { newPinVerifier } from "../pin.js";
 /** Students and stalls. Neither holds keys: the relayer moves funds, so each just needs a unique address. */
 
 export type StudentRow = {
+  email: string | null;
   uid_hash: string;
   student_no: string;
   name: string;

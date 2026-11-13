@@ -53,6 +53,15 @@ addColumn("receipts", "card_nonce", "INTEGER"); // card state nonce the POS saw 
 addColumn("students", "email", "TEXT"); // @umak.edu.ph address (self-registered; domain check only)
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS topups (
+    tx_hash     TEXT PRIMARY KEY,
+    address     TEXT NOT NULL,
+    amount      INTEGER NOT NULL,
+    method      TEXT NOT NULL,
+    ref         TEXT NOT NULL,
+    created_at  INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS topups_address ON topups(address, created_at);
   CREATE TABLE IF NOT EXISTS withdrawals (
     id           TEXT PRIMARY KEY,  -- client UUID: idempotency key
     merchant_id  TEXT NOT NULL,

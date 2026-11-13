@@ -104,41 +104,52 @@ export function MeHome() {
 type StartView =
   | { kind: 'tap' }
   | { kind: 'register'; tap: CardTap }
+  | { kind: 'login'; tap: CardTap }
   | { kind: 'busy'; text: string }
   | { kind: 'write'; tap: CardTap; card: Hex; login: MeLogin }
   | { kind: 'error'; message: string }
 
-/** First run: tap your ID. A blank ID registers; a registered one logs this phone in (and settles anything pending). */
+/** First run: look up the tapped ID, then register it or verify its login credentials. */
 function MeStart() {
   const { online, remember, reload, card } = useMe()
   const [view, setView] = useState<StartView>({ kind: 'tap' })
 
   const onTap = async (tap: CardTap) => {
-    if (!tap.card) return setView({ kind: 'register', tap })
     setView({ kind: 'busy', text: 'Checking your ID…' })
     try {
-      const s = await api.byUid(tap.uidHash)
-      const res = await api.refresh({ uid: tap.uid, card: tap.card })
-      setView({ kind: 'write', tap, card: res.card, login: { uidHash: s.uidHash, address: s.address, name: s.name, studentNo: s.studentNo } })
+      const { registered } = await api.lookupCard(tap.uid)
+      setView({ kind: registered ? 'login' : 'register', tap })
     } catch (e) {
-      if (e instanceof ApiError && e.status === 404) return setView({ kind: 'register', tap })
       setView({ kind: 'error', message: errorText(e) })
     }
   }
 
   return (
     <AppColumn>
-      <TopBar title={view.kind === 'register' ? 'Register your ID' : 'UMak Pay'} back={view.kind === 'tap' ? '/app' : () => setView({ kind: 'tap' })} actions={<NetChip online={online} />} />
+      <TopBar title={view.kind === 'register' ? 'Register your ID' : view.kind === 'login' ? 'Log in with your ID' : 'UMak Pay'} back={view.kind === 'tap' ? '/app' : () => setView({ kind: 'tap' })} actions={<NetChip online={online} />} />
       <div className="flex flex-1 flex-col px-4">
         {view.kind === 'tap' && (
           <>
-            <TapStep allowNew title="Tap your student ID" hint="Your ID is your wallet. Tap it to log in, or to register it the first time." onTap={(t) => void onTap(t)} />
+            <TapStep allowNew title="Tap your student ID" hint="Tap your ID, then enter your email, student number, and PIN to log in. New IDs can register here." onTap={(t) => void onTap(t)} />
             <ol className="mb-6 space-y-2 text-body-m text-on-surface-variant">
               <li>1. Register your ID with your @umak.edu.ph email.</li>
               <li>2. Top up online. The pesos go to your ID’s own wallet on-chain.</li>
               <li>3. Tap your ID at any stall, even with no signal.</li>
             </ol>
           </>
+        )}
+        {view.kind === 'login' && (
+          <LoginForm tap={view.tap} onSubmit={async (credentials) => {
+            const student = await api.login({ uid: view.tap.uid, ...credentials, restoreCard: !view.tap.card })
+            const login: MeLogin = { uidHash: student.uidHash, address: student.address, name: student.name, studentNo: student.studentNo }
+            if (view.tap.card) {
+              const res = await api.refresh({ uid: view.tap.uid, card: view.tap.card })
+              setView({ kind: 'write', tap: view.tap, card: res.card, login })
+            } else {
+              if (!student.card) throw new Error('The server did not return a wallet record. Try again.')
+              setView({ kind: 'write', tap: view.tap, card: student.card, login })
+            }
+          }} />
         )}
         {view.kind === 'register' && (
           <RegisterForm
@@ -167,6 +178,46 @@ function MeStart() {
         {view.kind === 'error' && <Failed message={view.message} onBack={() => setView({ kind: 'tap' })} />}
       </div>
     </AppColumn>
+  )
+}
+
+function LoginForm({ tap, onSubmit }: {
+  tap: CardTap
+  onSubmit: (credentials: { email: string; studentNo: string; pin: string }) => Promise<void>
+}) {
+  const [email, setEmail] = useState('')
+  const [studentNo, setStudentNo] = useState('')
+  const [pin, setPin] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const valid = email.trim() && studentNo.trim() && isPin(pin)
+  return (
+    <form className="flex flex-1 flex-col gap-4 py-5" onSubmit={async (e) => {
+      e.preventDefault()
+      if (!valid || busy) return
+      setBusy(true)
+      setError(null)
+      try {
+        await onSubmit({ email: email.trim().toLowerCase(), studentNo: studentNo.trim(), pin })
+      } catch (e) {
+        setError(errorText(e))
+        setPin('')
+      } finally {
+        setBusy(false)
+      }
+    }}>
+      <p className="text-body-m text-on-surface-variant">
+        ID …{tap.uid.slice(-6).toUpperCase()}{tap.virtual ? ' (demo)' : ''} is registered. Enter your details to log in.
+        {!tap.card && ' Its wallet record is missing. After verification, keep the ID on the phone to save a new record.'}
+      </p>
+      <TextField id="login-email" label="Email" type="email" autoComplete="email" required maxLength={120} disabled={busy} value={email} onChange={(e) => setEmail(e.target.value)} />
+      <TextField id="login-student-no" label="Student number" mono required maxLength={32} disabled={busy} value={studentNo} onChange={(e) => setStudentNo(e.target.value)} />
+      <TextField id="login-pin" label="PIN (6 digits)" mono inputMode="numeric" type="password" autoComplete="current-password" required minLength={6} maxLength={6} disabled={busy} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+      {error && <p role="alert" className="text-body-m text-error">{error}</p>}
+      <div className="mt-auto mb-4">
+        <Button size="l" full type="submit" icon="login" disabled={!valid || busy}>{busy ? 'Logging in…' : 'Log in'}</Button>
+      </div>
+    </form>
   )
 }
 
@@ -208,7 +259,7 @@ function MeDashboard({ me }: { me: MeLogin }) {
   useEffect(() => {
     void reload()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const recent = history?.receipts.slice(0, 5) ?? []
+  const recent = (history?.activity ?? history?.receipts ?? []).slice(0, 5)
   return (
     <AppColumn rail>
       <TopBar title={`Hi, ${firstName(me.name)}`} back="/app" actions={<NetChip online={online} />} />
@@ -231,7 +282,7 @@ function MeDashboard({ me }: { me: MeLogin }) {
         </div>
         {recent.length === 0 ? (
           <div className="px-4">
-            <EmptyState icon="receipt_long" title="No payments yet">Tap your ID at a stall to pay. Payments show here.</EmptyState>
+            <EmptyState icon="receipt_long" title="No activity yet">Top up your ID or tap it at a stall to pay. Transactions show here.</EmptyState>
           </div>
         ) : (
           <div className="divide-y divide-outline-variant">
@@ -248,15 +299,16 @@ function MeDashboard({ me }: { me: MeLogin }) {
 }
 
 function PaymentRow({ r }: { r: HistoryItem }) {
+  const topup = r.kind === 'topup'
   const body = (
     <>
-      <Avatar icon="storefront" tone={r.status === 'settled' ? 'secondary' : r.status === 'pending' ? 'tertiary' : 'error'} />
+      <Avatar icon={topup ? 'add_card' : 'storefront'} tone={r.status === 'settled' ? 'secondary' : r.status === 'pending' ? 'tertiary' : 'error'} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-body-l text-on-surface">{r.merchant ?? short(r.to)}</span>
-        <span className="block truncate text-body-m text-on-surface-variant">{when(r.createdAt)}{r.reason ? `, ${r.reason}` : ''}</span>
+        <span className="block truncate text-body-l text-on-surface">{topup ? (r.method === 'cash' ? 'Cash top up' : 'Top up') : r.merchant ?? short(r.to)}</span>
+        <span className="block truncate text-body-m text-on-surface-variant">{when(r.createdAt)}{topup && r.ref ? ` · ${r.ref}` : ''}{r.reason ? `, ${r.reason}` : ''}</span>
       </span>
       <span className="flex flex-col items-end gap-1">
-        <span className="text-title-m font-semibold tabular-nums">−{pesos(r.amount)}</span>
+        <span className="text-title-m font-semibold tabular-nums">{topup ? '+' : '−'}{pesos(r.amount)}</span>
         <StatusChip status={r.status} />
       </span>
     </>
@@ -357,10 +409,11 @@ export function MeTopUp() {
   const { me } = useMe()
   const [view, setView] = useFlow()
   const [amount, setAmount] = useState(20000)
+  const [recoveryTap, setRecoveryTap] = useState<CardTap | null>(null)
 
   const onTap = async (tap: CardTap) => {
     if (me && tap.uidHash !== me.uidHash) return setView({ kind: 'error', message: 'That is not the ID registered on this phone.' })
-    if (!tap.card) return setView({ kind: 'error', message: errorText(new Error('CARD_NOT_LINKED')) })
+    if (!tap.card) return setRecoveryTap(tap)
     let card: Hex = tap.card
     try {
       // A top-up needs a clear, current card. Settle first if a payment is on it.
@@ -387,6 +440,10 @@ export function MeTopUp() {
 
   return (
     <WriteThenDone view={view} setView={setView} title="Top up">
+      {recoveryTap ? <RecoverWallet tap={recoveryTap} onReady={(card) => {
+        setRecoveryTap(null)
+        void onTap({ ...recoveryTap, card })
+      }} /> : <>
       <div className="pt-5">
         <p className="text-label-l text-on-surface-variant">Amount</p>
         <p className="font-display text-display-m font-semibold tabular-nums">{pesos(amount)}</p>
@@ -398,8 +455,21 @@ export function MeTopUp() {
         <p className="mt-3 text-body-s text-on-surface-variant">Simulated GCash payment: test tPHP is minted to your ID's wallet. No real money moves.</p>
       </div>
       <TapStep title="Tap your ID to pay" hint="The new balance is written to your ID, so stalls can accept it offline." onTap={(t) => void onTap(t)} />
+      </>}
     </WriteThenDone>
   )
+}
+
+/** A remembered login cannot substitute for the signed wallet record required by top-up. */
+function RecoverWallet({ tap, onReady }: { tap: CardTap; onReady: (card: Hex) => void }) {
+  const { card } = useMe()
+  const [record, setRecord] = useState<Hex | null>(null)
+  if (record) return <CardWriter tap={tap} card={record} write={card.write} onDone={() => onReady(record)} />
+  return <LoginForm tap={tap} onSubmit={async (credentials) => {
+    const student = await api.login({ uid: tap.uid, ...credentials, restoreCard: true })
+    if (!student.card) throw new Error('The server did not return a wallet record. Try again.')
+    setRecord(student.card)
+  }} />
 }
 
 /* ---------- Activity ---------- */
@@ -412,7 +482,7 @@ export function MeActivity() {
   useEffect(() => {
     void reload()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const rows = (history?.receipts ?? []).filter((r) =>
+  const rows = (history?.activity ?? history?.receipts ?? []).filter((r) =>
     filter === 'all' ? true : filter === 'failed' ? r.status === 'failed' || r.status === 'rejected' : r.status === filter,
   )
   return (
@@ -425,7 +495,7 @@ export function MeActivity() {
           ))}
         </div>
         {rows.length === 0 ? (
-          <EmptyState icon="receipt_long" title="Nothing here">{history ? 'No payments match this filter.' : 'Connect to load your payments.'}</EmptyState>
+          <EmptyState icon="receipt_long" title="Nothing here">{history ? 'No transactions match this filter.' : 'Connect to load your activity.'}</EmptyState>
         ) : (
           <div className="-mx-4 divide-y divide-outline-variant">{rows.map((r) => <PaymentRow key={r.id} r={r} />)}</div>
         )}
