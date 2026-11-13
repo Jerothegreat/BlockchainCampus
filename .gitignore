@@ -6,3 +6,5 @@ dist
 *.log
 .DS_Store
 e2e/parity-out/
+# Impeccable engine binary (21 MB): local only, installed per machine
+.claude/skills/impeccable/scripts/bin/
