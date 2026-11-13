@@ -12,9 +12,12 @@ function required(name: string): string {
   return value;
 }
 
+// MetaMask exports private keys without the 0x prefix; viem requires it.
+const asKey = (value: string): Hex => (value.startsWith("0x") ? value : `0x${value}`) as Hex;
+
 function optionalKey(name: string): Hex | undefined {
   const value = process.env[name];
-  return value ? (value as Hex) : undefined;
+  return value ? asKey(value) : undefined;
 }
 
 export const config = {
@@ -24,7 +27,7 @@ export const config = {
   rpcUrl: required("RPC_URL"),
   chainId: Number(process.env.CHAIN_ID ?? 97),
   contract: getAddress(required("CONTRACT")),
-  relayerKey: required("RELAYER_PRIVATE_KEY") as Hex,
+  relayerKey: asKey(required("RELAYER_PRIVATE_KEY")),
   // Optional: only needed for POST /mint (cashier fallback when MetaMask is unavailable).
   deployerKey: optionalKey("DEPLOYER_PRIVATE_KEY"),
   cashierKey: process.env.CASHIER_KEY,

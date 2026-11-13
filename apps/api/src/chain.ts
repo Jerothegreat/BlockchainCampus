@@ -58,6 +58,7 @@ export async function balanceOf(address: Address): Promise<bigint> {
 }
 
 export const canMint = () => deployer !== undefined;
+export const signers = { relayer: relayer.account.address, deployer: deployer?.account.address };
 
 export function mint(to: Address, amount: bigint): Promise<Hex> {
   if (!deployer) throw new Error("DEPLOYER_PRIVATE_KEY not configured");

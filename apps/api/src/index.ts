@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import { signers } from "./chain.js";
 import { config } from "./config.js";
 import mint from "./routes/mint.js";
 import settle from "./routes/settle.js";
@@ -9,7 +10,7 @@ const app = Fastify({ logger: true });
 
 await app.register(cors, { origin: config.webOrigins });
 
-app.get("/health", async () => ({ status: "ok", chainId: config.chainId, contract: config.contract }));
+app.get("/health", async () => ({ status: "ok", chainId: config.chainId, contract: config.contract, ...signers }));
 await app.register(students);
 await app.register(settle);
 await app.register(mint);
